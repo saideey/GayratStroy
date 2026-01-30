@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     )
     
     # Application
-    app_name: str = "Metall Basa ERP"
+    app_name: str = "G'ayrat Stroy House ERP"
     app_version: str = "1.0.0"
     debug: bool = False
     

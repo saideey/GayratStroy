@@ -148,7 +148,7 @@ export default function POSPage() {
   // NEW: Receipt edit mode
   const [receiptEditMode, setReceiptEditMode] = useState(false)
   const [receiptData, setReceiptData] = useState({
-    companyName: 'INTER PROFNASTIL',
+    companyName: 'GAYRAT STROY HOUSE',
     customerName: '',
     customerPhone: '',
     customerCompany: '',
@@ -201,7 +201,7 @@ export default function POSPage() {
   useEffect(() => {
     if (showPrintPreview) {
       setReceiptData({
-        companyName: 'INTER PROFNASTIL',
+        companyName: 'GAYRAT STROY HOUSE',
         customerName: customer?.name || '',
         customerPhone: customer?.phone || '',
         customerCompany: customer?.company_name || '',
@@ -2598,15 +2598,22 @@ export default function POSPage() {
                   <!DOCTYPE html>
                   <html>
                   <head>
-                    <title>Chek - INTER PROFNASTIL</title>
+                    <title>Chek - G'AYRAT STROY HOUSE</title>
                     <meta charset="UTF-8">
                     <style>
                       * { margin: 0; padding: 0; box-sizing: border-box; }
+                      html {
+                        height: auto !important;
+                      }
                       body {
                         font-family: Arial, Helvetica, sans-serif;
                         font-size: 14px;
                         width: 80mm;
-                        padding: 3mm;
+                        height: auto !important;
+                        min-height: auto !important;
+                        max-height: none !important;
+                        padding: 2mm;
+                        margin: 0;
                         color: #000;
                         background: #fff;
                         -webkit-print-color-adjust: exact;
@@ -2616,49 +2623,49 @@ export default function POSPage() {
                       /* Header */
                       .header {
                         text-align: center;
-                        padding-bottom: 5px;
+                        padding-bottom: 3px;
                       }
                       .header img {
-                        height: 70px;
-                        max-width: 70mm;
+                        height: 50px;
+                        max-width: 60mm;
                       }
                       .header h1 {
-                        font-size: 20px;
+                        font-size: 18px;
                         font-weight: 900;
-                        margin: 5px 0;
+                        margin: 3px 0;
                         letter-spacing: 1px;
                       }
                       .header .date {
-                        font-size: 14px;
+                        font-size: 13px;
                         font-weight: bold;
                       }
 
                       /* Divider */
                       .divider {
-                        border-top: 2px solid #000;
-                        margin: 5px 0;
+                        border-top: 1px dashed #000;
+                        margin: 3px 0;
                       }
 
                       /* Customer */
                       .customer {
-                        padding: 5px 0;
-                        border-top: 2px solid #000;
-                        border-bottom: 2px solid #000;
-                        font-size: 13px;
-                        margin: 5px 0;
+                        padding: 3px 0;
+                        border-top: 1px dashed #000;
+                        border-bottom: 1px dashed #000;
+                        font-size: 12px;
+                        margin: 3px 0;
                       }
-                      .customer p { margin: 2px 0; font-weight: bold; }
+                      .customer p { margin: 1px 0; font-weight: bold; }
 
                       /* Table */
                       table {
                         width: 100%;
                         border-collapse: collapse;
-                        margin: 5px 0;
+                        margin: 3px 0;
                       }
                       th, td {
-                        border: 2px solid #000;
-                        padding: 4px 3px;
-                        font-size: 12px;
+                        border: 1px solid #000;
+                        padding: 2px 2px;
+                        font-size: 11px;
                       }
                       th {
                         font-weight: 900;
@@ -2674,17 +2681,17 @@ export default function POSPage() {
 
                       /* Grand Total Box */
                       .grand-total-box {
-                        border: 4px solid #000;
-                        padding: 8px;
-                        margin: 8px 0;
+                        border: 2px solid #000;
+                        padding: 4px;
+                        margin: 4px 0;
                         text-align: center;
                       }
                       .grand-total-label {
-                        font-size: 14px;
+                        font-size: 12px;
                         font-weight: 900;
                       }
                       .grand-total-amount {
-                        font-size: 24px;
+                        font-size: 20px;
                         font-weight: 900;
                         letter-spacing: 1px;
                       }
@@ -2692,32 +2699,38 @@ export default function POSPage() {
                       /* Footer */
                       .footer {
                         text-align: center;
-                        padding-top: 8px;
-                        border-top: 2px solid #000;
+                        padding-top: 4px;
+                        border-top: 1px dashed #000;
                       }
                       .footer .thanks {
-                        font-size: 16px;
+                        font-size: 14px;
                         font-weight: 900;
-                        margin-bottom: 5px;
+                        margin-bottom: 2px;
                       }
                       .footer .contact {
-                        font-size: 13px;
+                        font-size: 12px;
                         font-weight: bold;
                       }
 
                       /* Bottom spacing for tearing */
                       .tear-space {
-                        height: 15mm;
+                        height: 5mm;
                       }
 
                       @media print {
-                        body {
+                        html, body {
                           width: 80mm;
+                          height: auto !important;
                           padding: 2mm;
+                          margin: 0 !important;
                         }
                         @page {
-                          size: 80mm auto;
-                          margin: 0;
+                          size: 80mm auto !important;
+                          margin: 0 !important;
+                          padding: 0 !important;
+                        }
+                        * {
+                          page-break-inside: avoid;
                         }
                       }
                     </style>

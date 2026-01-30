@@ -48,7 +48,7 @@ export function MainLayout() {
         </button>
         <img 
           src="/logo.png" 
-          alt="Inter Profnastil" 
+          alt="G'ayrat Stroy House" 
           className="h-12 w-auto object-contain ml-2"
         />
       </header>

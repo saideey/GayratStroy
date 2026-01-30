@@ -195,53 +195,61 @@ class ProductService:
         old_cost_price = product.cost_price
         old_vip_price = product.vip_price
         
-        # Update fields
+        # Validate base_uom_id if provided
         update_data = data.model_dump(exclude_unset=True)
+        if 'base_uom_id' in update_data and update_data['base_uom_id'] is not None:
+            new_uom = self.db.query(UnitOfMeasure).filter(
+                UnitOfMeasure.id == update_data['base_uom_id']
+            ).first()
+            if not new_uom:
+                return None, "O'lchov birligi topilmadi"
+
+        # Update fields
         for field, value in update_data.items():
             if hasattr(product, field):
                 setattr(product, field, value)
-        
+
         # Log price changes
         if data.sale_price is not None and data.sale_price != old_sale_price:
             self._log_price_change(product.id, updated_by_id, "sale", old_sale_price, data.sale_price)
-        
+
         if data.cost_price is not None and data.cost_price != old_cost_price:
             self._log_price_change(product.id, updated_by_id, "cost", old_cost_price, data.cost_price)
-        
+
         if data.vip_price is not None and data.vip_price != old_vip_price:
             self._log_price_change(product.id, updated_by_id, "vip", old_vip_price, data.vip_price)
-        
+
         self._log_action(updated_by_id, "update", "products", product.id, f"Tovar yangilandi: {product.name}")
-        
+
         self.db.commit()
         self.db.refresh(product)
-        
+
         return product, "Tovar muvaffaqiyatli yangilandi"
-    
+
     def delete_product(self, product_id: int, deleted_by_id: int) -> Tuple[bool, str]:
         """Soft delete product."""
         product = self.get_product_by_id(product_id)
         if not product:
             return False, "Tovar topilmadi"
-        
+
         # Check if product has stock
         stock = self.db.query(Stock).filter(
             Stock.product_id == product_id,
             Stock.quantity > 0
         ).first()
-        
+
         if stock:
             return False, "Omborda qoldiq bor, avval qoldiqni 0 ga tushiring"
-        
+
         product.is_deleted = True
         product.deleted_at = get_tashkent_now()
         product.is_active = False
-        
+
         self._log_action(deleted_by_id, "delete", "products", product.id, f"Tovar o'chirildi: {product.name}")
-        
+
         self.db.commit()
         return True, "Tovar o'chirildi"
-    
+
     def add_uom_conversion(
         self,
         product_id: int,
@@ -254,38 +262,38 @@ class ProductService:
         product = self.get_product_by_id(product_id)
         if not product:
             return None, "Tovar topilmadi"
-        
+
         # Check if conversion already exists
         existing = self.db.query(ProductUOMConversion).filter(
             ProductUOMConversion.product_id == product_id,
             ProductUOMConversion.uom_id == uom_id
         ).first()
-        
+
         if existing:
             return None, "Bu o'lchov birligi allaqachon qo'shilgan"
-        
+
         conversion = ProductUOMConversion(
             product_id=product_id,
             uom_id=uom_id,
             conversion_factor=conversion_factor,
             sale_price=sale_price
         )
-        
+
         self.db.add(conversion)
         self.db.commit()
         self.db.refresh(conversion)
-        
+
         return conversion, "O'lchov birligi qo'shildi"
-    
+
     def get_product_stock(self, product_id: int, warehouse_id: int = None) -> List[Stock]:
         """Get product stock in warehouses."""
         query = self.db.query(Stock).filter(Stock.product_id == product_id)
-        
+
         if warehouse_id:
             query = query.filter(Stock.warehouse_id == warehouse_id)
-        
+
         return query.all()
-    
+
     def _log_price_change(
         self,
         product_id: int,
@@ -303,7 +311,7 @@ class ProductService:
             new_price=new_price
         )
         self.db.add(history)
-    
+
     def _log_action(self, user_id: int, action: str, table: str, record_id: int, description: str):
         """Log action to audit."""
         log = AuditLog(
@@ -318,17 +326,17 @@ class ProductService:
 
 class CategoryService:
     """Category management service."""
-    
+
     def __init__(self, db: Session):
         self.db = db
-    
+
     def get_category_by_id(self, category_id: int) -> Optional[Category]:
         """Get category by ID."""
         return self.db.query(Category).filter(
             Category.id == category_id,
             Category.is_deleted == False
         ).first()
-    
+
     def get_categories(
         self,
         parent_id: Optional[int] = None,
@@ -336,25 +344,25 @@ class CategoryService:
     ) -> List[Category]:
         """Get categories list."""
         query = self.db.query(Category).filter(Category.is_deleted == False)
-        
+
         if not include_inactive:
             query = query.filter(Category.is_active == True)
-        
+
         if parent_id is not None:
             query = query.filter(Category.parent_id == parent_id)
         else:
             # Root categories only
             query = query.filter(Category.parent_id == None)
-        
+
         return query.order_by(Category.sort_order, Category.name).all()
-    
+
     def get_category_tree(self) -> List[dict]:
         """Get full category tree."""
         categories = self.db.query(Category).filter(
             Category.is_deleted == False,
             Category.is_active == True
         ).order_by(Category.sort_order, Category.name).all()
-        
+
         # Build tree
         category_dict = {c.id: {
             "id": c.id,
@@ -363,7 +371,7 @@ class CategoryService:
             "parent_id": c.parent_id,
             "children": []
         } for c in categories}
-        
+
         tree = []
         for cat in categories:
             if cat.parent_id is None:
@@ -372,9 +380,9 @@ class CategoryService:
                 parent = category_dict.get(cat.parent_id)
                 if parent:
                     parent["children"].append(category_dict[cat.id])
-        
+
         return tree
-    
+
     def create_category(
         self,
         name: str,
@@ -383,21 +391,21 @@ class CategoryService:
         created_by_id: int = None
     ) -> Tuple[Optional[Category], str]:
         """Create new category."""
-        
+
         # Generate slug
         slug = generate_slug(name)
-        
+
         # Check slug uniqueness
         existing = self.db.query(Category).filter(Category.slug == slug).first()
         if existing:
             slug = f"{slug}-{get_tashkent_now().strftime('%Y%m%d%H%M%S')}"
-        
+
         # Validate parent exists
         if parent_id:
             parent = self.get_category_by_id(parent_id)
             if not parent:
                 return None, "Ota kategoriya topilmadi"
-        
+
         category = Category(
             name=name,
             slug=slug,
@@ -405,13 +413,13 @@ class CategoryService:
             parent_id=parent_id,
             is_active=True
         )
-        
+
         self.db.add(category)
         self.db.commit()
         self.db.refresh(category)
-        
+
         return category, "Kategoriya yaratildi"
-    
+
     def update_category(
         self,
         category_id: int,
@@ -422,66 +430,66 @@ class CategoryService:
         category = self.get_category_by_id(category_id)
         if not category:
             return None, "Kategoriya topilmadi"
-        
+
         for field, value in data.items():
             if hasattr(category, field) and value is not None:
                 setattr(category, field, value)
-        
+
         self.db.commit()
         self.db.refresh(category)
-        
+
         return category, "Kategoriya yangilandi"
-    
+
     def delete_category(self, category_id: int, deleted_by_id: int) -> Tuple[bool, str]:
         """Soft delete category."""
         category = self.get_category_by_id(category_id)
         if not category:
             return False, "Kategoriya topilmadi"
-        
+
         # Check for child categories
         children = self.db.query(Category).filter(
             Category.parent_id == category_id,
             Category.is_deleted == False
         ).count()
-        
+
         if children > 0:
             return False, "Bu kategoriyada pastki kategoriyalar mavjud"
-        
+
         # Check for products
         products = self.db.query(Product).filter(
             Product.category_id == category_id,
             Product.is_deleted == False
         ).count()
-        
+
         if products > 0:
             return False, f"Bu kategoriyada {products} ta tovar mavjud"
-        
+
         category.is_deleted = True
         category.deleted_at = get_tashkent_now()
-        
+
         self.db.commit()
         return True, "Kategoriya o'chirildi"
 
 
 class UOMService:
     """Unit of Measure management service."""
-    
+
     def __init__(self, db: Session):
         self.db = db
-    
+
     def get_all_uoms(self, uom_type: Optional[str] = None) -> List[UnitOfMeasure]:
         """Get all units of measure."""
         query = self.db.query(UnitOfMeasure).filter(UnitOfMeasure.is_active == True)
-        
+
         if uom_type:
             query = query.filter(UnitOfMeasure.uom_type == uom_type)
-        
+
         return query.order_by(UnitOfMeasure.uom_type, UnitOfMeasure.name).all()
-    
+
     def get_uom_by_id(self, uom_id: int) -> Optional[UnitOfMeasure]:
         """Get UOM by ID."""
         return self.db.query(UnitOfMeasure).filter(UnitOfMeasure.id == uom_id).first()
-    
+
     def create_uom(
         self,
         name: str,
@@ -491,15 +499,15 @@ class UOMService:
         created_by_id: int = None
     ) -> Tuple[Optional[UnitOfMeasure], str]:
         """Create new unit of measure."""
-        
+
         # Check uniqueness
         existing = self.db.query(UnitOfMeasure).filter(
             or_(UnitOfMeasure.name == name, UnitOfMeasure.symbol == symbol)
         ).first()
-        
+
         if existing:
             return None, "Bu nom yoki belgi allaqachon mavjud"
-        
+
         uom = UnitOfMeasure(
             name=name,
             symbol=symbol,
@@ -507,9 +515,9 @@ class UOMService:
             base_factor=base_factor,
             is_active=True
         )
-        
+
         self.db.add(uom)
         self.db.commit()
         self.db.refresh(uom)
-        
+
         return uom, "O'lchov birligi yaratildi"

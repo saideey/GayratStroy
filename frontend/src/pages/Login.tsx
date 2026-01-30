@@ -114,7 +114,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-6">
             <img 
               src="/logo.png" 
-              alt="Gayrat Stroy"
+              alt="G'ayrat Stroy House" 
               className="h-24 lg:h-28 w-auto object-contain mx-auto"
             />
           </div>

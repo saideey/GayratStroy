@@ -60,9 +60,16 @@ class SaleService:
         
         if warehouse_id:
             query = query.filter(Sale.warehouse_id == warehouse_id)
-        
+
         if payment_status:
-            query = query.filter(Sale.payment_status == payment_status)
+            # String yoki PaymentStatus enum bo'lishi mumkin
+            if isinstance(payment_status, str):
+                try:
+                    payment_status = PaymentStatus(payment_status.lower())
+                except ValueError:
+                    payment_status = None
+            if payment_status:
+                query = query.filter(Sale.payment_status == payment_status)
         
         if start_date:
             query = query.filter(Sale.sale_date >= start_date)

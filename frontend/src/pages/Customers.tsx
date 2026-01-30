@@ -200,7 +200,7 @@ export default function CustomersPage() {
       
       // Create workbook
       const workbook = new ExcelJS.Workbook()
-      workbook.creator = 'Inter Profnastil ERP'
+      workbook.creator = 'Gayrat Stroy House ERP'
       workbook.created = new Date()
       
       const ws = workbook.addWorksheet('Mijoz hisoboti', {
@@ -602,7 +602,7 @@ export default function CustomersPage() {
       // ═══════════════════════════════════════════════════════════════
       ws.mergeCells(`A${currentRow}:K${currentRow}`)
       const footerCell = ws.getCell(`A${currentRow}`)
-      footerCell.value = '© Gayrat Stroy System | Hisobot avtomatik tarzda yaratildi | XLAB IT COMPANY'
+      footerCell.value = '© Gayrat Stroy House ERP System | Hisobot avtomatik tarzda yaratildi'
       footerCell.font = { italic: true, size: 10, color: { argb: 'FF' + colors.gray } }
       footerCell.alignment = { horizontal: 'center' }
       

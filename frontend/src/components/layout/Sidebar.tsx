@@ -135,7 +135,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="p-5 lg:p-6 border-b border-border flex items-center justify-between">
           <img
             src="/logo.png"
-            alt="Inter Profnastil"
+            alt="G'ayrat Stroy House"
             className="h-16 lg:h-20 xl:h-24 w-auto object-contain"
           />
           {/* Close button for mobile */}

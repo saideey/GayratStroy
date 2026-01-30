@@ -206,6 +206,7 @@ class ProductUpdate(BaseSchema):
     barcode: Optional[str] = None
     description: Optional[str] = None
     category_id: Optional[int] = None
+    base_uom_id: Optional[int] = None  # Asosiy o'lchov birligi
     cost_price: Optional[Decimal] = None
     sale_price: Optional[Decimal] = None
     sale_price_usd: Optional[Decimal] = None
@@ -223,7 +224,7 @@ class ProductUpdate(BaseSchema):
     country_of_origin: Optional[str] = None
     is_featured: Optional[bool] = None
     is_active: Optional[bool] = None
-    
+
     @field_validator("barcode", "article", mode="before")
     @classmethod
     def empty_string_to_none(cls, v):
@@ -235,7 +236,7 @@ class ProductUpdate(BaseSchema):
 
 class ProductResponse(ProductBase, TimestampMixin):
     """Product response schema."""
-    
+
     id: int
     is_active: bool
     category: Optional[CategoryResponse] = None
@@ -245,7 +246,7 @@ class ProductResponse(ProductBase, TimestampMixin):
 
 class ProductListItem(BaseSchema):
     """Simplified product for lists."""
-    
+
     id: int
     name: str
     article: Optional[str] = None
@@ -269,14 +270,14 @@ class ProductListItem(BaseSchema):
     is_active: bool
     current_stock: Decimal = Decimal("0")
     uom_conversions: List[dict] = []
-    
+
     class Config:
         from_attributes = True
 
 
 class ProductListResponse(BaseModel):
     """Product list response with pagination."""
-    
+
     success: bool = True
     data: List[ProductListItem]
     total: int
@@ -286,7 +287,7 @@ class ProductListResponse(BaseModel):
 
 class ProductSearchParams(BaseModel):
     """Product search parameters."""
-    
+
     q: Optional[str] = None  # Search query (name, article, barcode)
     category_id: Optional[int] = None
     min_price: Optional[Decimal] = None
@@ -299,7 +300,7 @@ class ProductSearchParams(BaseModel):
 
 class ProductStockInfo(BaseSchema):
     """Product stock information."""
-    
+
     product_id: int
     product_name: str
     warehouse_id: int
@@ -316,12 +317,12 @@ class ProductStockInfo(BaseSchema):
 
 class BulkPriceUpdateRequest(BaseModel):
     """Bulk price update request."""
-    
+
     product_ids: List[int]
     price_type: str  # cost, sale, vip
     adjustment_type: str  # percent, fixed
     adjustment_value: Decimal
-    
+
     @field_validator("price_type")
     @classmethod
     def validate_price_type(cls, v: str) -> str:

@@ -1,5 +1,5 @@
 """
-Metall Basa ERP System - Main Application
+G'ayrat Stroy House ERP System - Main Application
 
 Qurilish mollari do'koni uchun ERP tizimi.
 """
@@ -27,7 +27,7 @@ from routers.sync import router as sync_router
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
-    logger.info("🚀 Starting Metall Basa ERP API...")
+    logger.info("🚀 Starting G'ayrat Stroy House ERP API...")
 
     # Initialize database
     try:
@@ -43,17 +43,17 @@ async def lifespan(app: FastAPI):
         logger.error(f"❌ Database initialization failed: {e}")
         raise
 
-    logger.info("✅ Metall Basa ERP API started successfully!")
+    logger.info("✅ G'ayrat Stroy House ERP API started successfully!")
 
     yield
 
     # Shutdown
-    logger.info("👋 Shutting down Metall Basa ERP API...")
+    logger.info("👋 Shutting down G'ayrat Stroy House ERP API...")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="Metall Basa ERP API",
+    title="G'ayrat Stroy House ERP API",
     description="""
     Qurilish mollari do'koni uchun ERP tizimi.
     
@@ -103,7 +103,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def root():
     """API root endpoint."""
     return {
-        "message": "Metall Basa ERP API",
+        "message": "G'ayrat Stroy House ERP API",
         "version": "1.0.0",
         "status": "running"
     }

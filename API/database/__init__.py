@@ -1,5 +1,5 @@
 """
-Database package for Metall Basa ERP.
+Database package for G'ayrat Stroy House ERP.
 
 Usage:
     from database import db, get_db, init_db

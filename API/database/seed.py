@@ -275,7 +275,7 @@ def seed_system_settings(session: Session):
         # General settings
         SystemSetting(
             key="company_name",
-            value="Metall Basa",
+            value="G'ayrat Stroy House",
             value_type="string",
             category="general",
             description="Kompaniya nomi",
@@ -297,7 +297,7 @@ def seed_system_settings(session: Session):
             description="Kompaniya manzili",
             is_public=True,
         ),
-        
+
         # Sales settings
         SystemSetting(
             key="max_seller_discount",
@@ -323,7 +323,7 @@ def seed_system_settings(session: Session):
             description="Qarzga sotishda mijoz majburiymi",
             is_public=False,
         ),
-        
+
         # SMS settings
         SystemSetting(
             key="sms_enabled",
@@ -365,7 +365,7 @@ def seed_system_settings(session: Session):
             description="Qarz eslatmasi uchun SMS",
             is_public=False,
         ),
-        
+
         # Stock settings
         SystemSetting(
             key="low_stock_alert_enabled",
@@ -391,7 +391,7 @@ def seed_system_settings(session: Session):
             description="Telegram bot tokeni",
             is_public=False,
         ),
-        
+
         # Currency settings
         SystemSetting(
             key="default_currency",
@@ -410,7 +410,7 @@ def seed_system_settings(session: Session):
             is_public=True,
         ),
     ]
-    
+
     # Check if settings exist
     existing = session.query(SystemSetting).first()
     if not existing:
@@ -423,7 +423,7 @@ def seed_system_settings(session: Session):
 
 def seed_expense_categories(session: Session):
     """Create default expense categories."""
-    
+
     categories = [
         ExpenseCategory(name="Ish haqi", description="Xodimlar ish haqi"),
         ExpenseCategory(name="Ijara", description="Ombor va do'kon ijarasi"),
@@ -435,7 +435,7 @@ def seed_expense_categories(session: Session):
         ExpenseCategory(name="Soliq", description="Soliqlar"),
         ExpenseCategory(name="Boshqa", description="Boshqa xarajatlar"),
     ]
-    
+
     existing = session.query(ExpenseCategory).first()
     if not existing:
         session.add_all(categories)
@@ -447,26 +447,26 @@ def seed_expense_categories(session: Session):
 
 def seed_sms_templates(session: Session):
     """Create default SMS templates."""
-    
+
     templates = [
         SMSTemplate(
             name="Sotuv yakunlandi",
             code="sale_complete",
-            template_text="Hurmatli {customer_name}, sizning {amount} so'mlik xaridingiz uchun rahmat! Metall Basa",
+            template_text="Hurmatli {customer_name}, sizning {amount} so'mlik xaridingiz uchun rahmat! G'ayrat Stroy House",
             variables=["customer_name", "amount"],
             is_active=True,
         ),
         SMSTemplate(
             name="Qarz eslatmasi",
             code="debt_reminder",
-            template_text="Hurmatli {customer_name}, sizning {debt_amount} so'm qarzingiz mavjud. Iltimos to'lovni amalga oshiring. Metall Basa",
+            template_text="Hurmatli {customer_name}, sizning {debt_amount} so'm qarzingiz mavjud. Iltimos to'lovni amalga oshiring. G'ayrat Stroy House",
             variables=["customer_name", "debt_amount"],
             is_active=True,
         ),
         SMSTemplate(
             name="To'lov qabul qilindi",
             code="payment_received",
-            template_text="Hurmatli {customer_name}, {amount} so'mlik to'lovingiz qabul qilindi. Qolgan qarz: {remaining_debt} so'm. Metall Basa",
+            template_text="Hurmatli {customer_name}, {amount} so'mlik to'lovingiz qabul qilindi. Qolgan qarz: {remaining_debt} so'm. G'ayrat Stroy House",
             variables=["customer_name", "amount", "remaining_debt"],
             is_active=True,
         ),

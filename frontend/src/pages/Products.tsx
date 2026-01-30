@@ -155,6 +155,7 @@ export default function ProductsPage() {
         article: data.article,
         barcode: data.barcode,
         category_id: data.category_id,
+        base_uom_id: data.base_uom_id,  // Asosiy o'lchov birligi
         sale_price: data.sale_price,  // UZS da sotish narxi
         vip_price: data.vip_price || null,  // UZS da VIP narx
         color: data.color,
@@ -370,7 +371,7 @@ export default function ProductsPage() {
           className="w-full sm:max-w-xs text-sm lg:text-base"
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        
+
         <select
           className="min-h-[44px] lg:min-h-btn px-3 lg:px-4 border-2 border-border rounded-xl text-sm lg:text-base"
           onChange={(e) => setSelectedCategory(e.target.value ? Number(e.target.value) : null)}
@@ -389,14 +390,14 @@ export default function ProductsPage() {
           <h3 className="font-semibold mb-2 lg:mb-3 text-sm lg:text-base">{t('categories')}</h3>
           <div className="flex flex-wrap gap-1.5 lg:gap-2">
             {categories?.map((cat: Category) => (
-              <div 
-                key={cat.id} 
+              <div
+                key={cat.id}
                 className={cn(
                   "flex items-center gap-1.5 lg:gap-2 px-2 lg:px-3 py-1.5 lg:py-2 rounded-lg border text-sm",
                   selectedCategory === cat.id ? "bg-primary/10 border-primary" : "bg-gray-50"
                 )}
               >
-                <span 
+                <span
                   className="cursor-pointer"
                   onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
                 >
@@ -455,8 +456,8 @@ export default function ProductsPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-start gap-2">
                           {product.color && (
-                            <div 
-                              className="w-3 h-3 rounded-full mt-1.5 shrink-0" 
+                            <div
+                              className="w-3 h-3 rounded-full mt-1.5 shrink-0"
                               style={{ backgroundColor: product.color }}
                             />
                           )}
@@ -484,8 +485,8 @@ export default function ProductsPage() {
                               {conv.uom_symbol}
                             </Badge>
                           ))}
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleOpenUOMDialog(product)}
                             className="h-6 px-2"
@@ -517,15 +518,15 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="icon"
                             onClick={() => handleEdit(product)}
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="icon"
                             onClick={() => {
                               if (confirm(t('confirmDelete'))) {
@@ -599,7 +600,7 @@ export default function ProductsPage() {
             {/* Hidden inputs for price fields */}
             <input type="hidden" {...register('sale_price', { valueAsNumber: true })} />
             <input type="hidden" {...register('vip_price', { valueAsNumber: true })} />
-            
+
             <div className="space-y-2">
               <label className="font-medium">{t('productName')} *</label>
               <Input
@@ -774,8 +775,8 @@ export default function ProductsPage() {
                   // Calculate: 1 base = how many of this
                   const toThisFromBase = conv.is_base ? 1 : (1 / conv.conversion_factor)
                   return (
-                    <div 
-                      key={conv.uom_id} 
+                    <div
+                      key={conv.uom_id}
                       className={cn(
                         "flex items-center justify-between p-3 rounded-pos",
                         conv.is_base ? "bg-primary/10 border-2 border-primary" : "bg-gray-50"
@@ -874,8 +875,8 @@ export default function ProductsPage() {
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full"
                   disabled={addUOMConversion.isPending}
                 >
@@ -914,7 +915,7 @@ export default function ProductsPage() {
               <Button variant="outline" onClick={() => setShowCategoryDialog(false)}>
                 {t('cancel')}
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   if (categoryName.trim()) {
                     createCategory.mutate(categoryName.trim())
@@ -953,7 +954,7 @@ export default function ProductsPage() {
               <Button variant="outline" onClick={() => setShowEditCategoryDialog(false)}>
                 {t('cancel')}
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   if (editCategoryName.trim() && editingCategory) {
                     updateCategory.mutate({ id: editingCategory.id, name: editCategoryName.trim() })

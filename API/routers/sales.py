@@ -791,7 +791,7 @@ async def get_receipt(
         raise HTTPException(status_code=404, detail="Sotuv topilmadi")
     
     # Get company info from settings (simplified)
-    company_name = "Metall Basa"
+    company_name = "G'ayrat Stroy House"
     company_address = "Toshkent sh."
     company_phone = "+998 90 123 45 67"
     
