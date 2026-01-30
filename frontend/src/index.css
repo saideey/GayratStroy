@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Katta shriftlar - global */
+  html {
+    font-size: 16px;
+  }
+  
+  /* POS mode uchun kattaroq */
+  .pos-mode {
+    font-size: 18px;
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  /* Katta tugmalar */
+  .btn-pos {
+    @apply min-h-btn px-6 py-3 text-pos-base font-semibold rounded-pos 
+           transition-all duration-200 active:scale-95 
+           disabled:opacity-50 disabled:cursor-not-allowed
+           focus:outline-none focus:ring-4;
+  }
+  
+  .btn-pos-lg {
+    @apply min-h-btn-lg px-8 py-4 text-pos-lg font-bold rounded-pos;
+  }
+  
+  .btn-pos-xl {
+    @apply min-h-btn-xl px-10 py-5 text-pos-xl font-bold rounded-pos;
+  }
+  
+  /* Primary button */
+  .btn-primary {
+    @apply btn-pos bg-primary text-white hover:bg-primary-dark 
+           focus:ring-primary/30;
+  }
+  
+  /* Success button */
+  .btn-success {
+    @apply btn-pos bg-success text-white hover:bg-success-dark 
+           focus:ring-success/30;
+  }
+  
+  /* Warning button */
+  .btn-warning {
+    @apply btn-pos bg-warning text-white hover:bg-warning-dark 
+           focus:ring-warning/30;
+  }
+  
+  /* Danger button */
+  .btn-danger {
+    @apply btn-pos bg-danger text-white hover:bg-danger-dark 
+           focus:ring-danger/30;
+  }
+  
+  /* Outline button */
+  .btn-outline {
+    @apply btn-pos bg-transparent border-2 border-border text-text-primary
+           hover:bg-gray-100 focus:ring-gray-300/30;
+  }
+  
+  /* Card style */
+  .card-pos {
+    @apply bg-surface rounded-pos border border-border shadow-sm p-pos-lg;
+  }
+  
+  /* Input style */
+  .input-pos {
+    @apply w-full min-h-btn px-4 py-3 text-pos-base 
+           border-2 border-border rounded-pos
+           focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20
+           placeholder:text-text-secondary;
+  }
+  
+  /* POS Item Row */
+  .pos-item-row {
+    @apply flex items-center gap-4 p-4 bg-surface border-b border-border
+           min-h-[70px] hover:bg-gray-50 transition-colors;
+  }
+  
+  /* Quick product button */
+  .quick-product-btn {
+    @apply flex flex-col items-center justify-center 
+           min-w-[120px] min-h-[120px] p-4
+           bg-surface border-2 border-border rounded-pos
+           hover:border-primary hover:shadow-md 
+           active:scale-95 transition-all cursor-pointer;
+  }
+  
+  /* Category tab */
+  .category-tab {
+    @apply px-6 py-4 text-pos-base font-medium
+           border-b-4 border-transparent
+           hover:bg-gray-50 transition-colors cursor-pointer;
+  }
+  
+  .category-tab.active {
+    @apply border-primary text-primary bg-primary/5;
+  }
+  
+  /* Total display */
+  .total-display {
+    @apply text-pos-total font-bold text-success;
+  }
+  
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-4 px-4 py-4 text-pos-base font-medium
+           rounded-pos hover:bg-gray-100 transition-colors cursor-pointer;
+  }
+  
+  .nav-item.active {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded hover:bg-gray-400;
+}
+
+/* Hide scrollbar for horizontal scroll but allow scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 1024px) {
+  button, a, .clickable {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Larger touch targets on mobile */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Safe area for mobile */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Animation for slide up */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Number input - hide arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
