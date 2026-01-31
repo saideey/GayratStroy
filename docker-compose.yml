@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     build:
@@ -14,13 +12,18 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-metall_basa}
       TZ: ${TZ:-Asia/Tashkent}
     volumes:
-      - postgres_data_2:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # Faqat localhost dan kirish mumkin (xavfsizlik uchun)
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     command:
       - "postgres"
       - "-c"
+      - "hba_file=/etc/postgresql/pg_hba.conf"
+      - "-c"
       - "max_connections=100"
+      - "-c"
+      - "shared_buffers=128MB"
       - "-c"
       - "idle_in_transaction_session_timeout=60000"
       - "-c"
@@ -33,6 +36,10 @@ services:
       - "tcp_keepalives_count=6"
       - "-c"
       - "log_statement=none"
+      - "-c"
+      - "log_connections=off"
+      - "-c"
+      - "log_disconnections=off"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-metall_basa}"]
       interval: 5s
@@ -48,7 +55,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-metall_basa}
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
       DEBUG: ${DEBUG:-false}
       SQL_ECHO: ${SQL_ECHO:-false}
       USE_NULL_POOL: "true"
@@ -61,7 +68,7 @@ services:
         condition: service_healthy
     volumes:
       - ./API:/app
-      - api_uploads_2:/app/uploads
+      - api_uploads:/app/uploads
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -84,7 +91,9 @@ services:
       BOT_HTTP_PORT: 8081
       TZ: ${TZ:-Asia/Tashkent}
     ports:
-      - "${BOT_PORT:-8081}:8081"
+      - "127.0.0.1:${BOT_PORT:-8081}:8081"
+    depends_on:
+      - api
     volumes:
       - ./telegram_bot:/app
 
@@ -103,9 +112,10 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:${API_PORT:-8000}
-      - TZ=${TZ:-Asia/Tashkent}
+      VITE_API_URL: http://localhost:${API_PORT:-8000}
+      TZ: ${TZ:-Asia/Tashkent}
 
+  # Optional: pgAdmin - faqat dev rejimida
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: ${COMPOSE_PROJECT_NAME}_pgadmin
@@ -114,16 +124,16 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@metall.uz}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
     depends_on:
       - db
     profiles:
       - dev
 
 volumes:
-  postgres_data_2:
+  postgres_data:
     name: ${COMPOSE_PROJECT_NAME}_postgres_data
-  api_uploads_2:
+  api_uploads:
     name: ${COMPOSE_PROJECT_NAME}_api_uploads
 
 networks:
