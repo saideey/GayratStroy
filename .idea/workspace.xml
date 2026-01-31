@@ -5,13 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d66de22b-1f00-4167-b7c4-4f73674c7aed" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/db/pg_hba.conf" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/db/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/docker-entrypoint-wrapper.sh" beforeDir="false" afterPath="$PROJECT_DIR$/db/docker-entrypoint-wrapper.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/sync-password.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/POS.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/POS.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
