@@ -512,21 +512,21 @@ Rahmat! 🙏
                 "",
                 "📎 <i>Batafsil ma'lumot Excel faylda</i>",
                 "",
-                "🏭 <i>G'AYRAT STROY</i>"
+                "🏭 <i>INTER PROFNASTIL</i>"
             ])
-
+            
             message = "\n".join(lines)
-
+            
             # Send text message first
             await self.bot.send_message(
                 chat_id=chat_id,
                 text=message,
                 parse_mode=ParseMode.HTML
             )
-
+            
             # Generate Excel file
             excel_data = await self._generate_daily_report_excel(report_data, today)
-
+            
             if excel_data:
                 # Send Excel file
                 await self.bot.send_document(
@@ -537,14 +537,14 @@ Rahmat! 🙏
                     ),
                     caption=f"📊 Kunlik hisobot - {today.strftime('%d.%m.%Y')}"
                 )
-
+            
             logger.info(f"Daily report with Excel sent to group {chat_id}")
             return True
-
+            
         except Exception as e:
             logger.error(f"Failed to send daily report with Excel: {e}")
             return False
-
+    
     async def _generate_daily_report_excel(self, data: dict, report_date) -> bytes:
         """Generate Excel file for daily report."""
         try:
@@ -552,9 +552,9 @@ Rahmat! 🙏
             from openpyxl import Workbook
             from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
             from openpyxl.utils import get_column_letter
-
+            
             wb = Workbook()
-
+            
             # Styles
             header_font = Font(bold=True, color="FFFFFF", size=11)
             header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -566,18 +566,18 @@ Rahmat! 🙏
                 top=Side(style='thin'),
                 bottom=Side(style='thin')
             )
-
+            
             def fmt_money(val):
                 return float(val or 0)
-
+            
             # ===== Sheet 1: Umumiy =====
             ws1 = wb.active
             ws1.title = "Umumiy"
-
+            
             ws1['A1'] = "KUNLIK HISOBOT"
             ws1['A1'].font = Font(bold=True, size=16)
             ws1['A2'] = f"Sana: {report_date.strftime('%d.%m.%Y')}"
-
+            
             summary_data = [
                 ["Ko'rsatkich", "Qiymat"],
                 ["Sotuvlar soni", f"{data.get('total_sales_count', 0)} ta"],
@@ -593,7 +593,7 @@ Rahmat! 🙏
                 ["", ""],
                 ["Umumiy qarzdorlik", f"{fmt_money(data.get('total_all_debt', 0)):,.0f} so'm"],
             ]
-
+            
             for row_idx, row_data in enumerate(summary_data, start=4):
                 for col_idx, value in enumerate(row_data, start=1):
                     cell = ws1.cell(row=row_idx, column=col_idx, value=value)
@@ -601,20 +601,20 @@ Rahmat! 🙏
                     if row_idx == 4:
                         cell.font = header_font
                         cell.fill = header_fill
-
+            
             ws1.column_dimensions['A'].width = 25
             ws1.column_dimensions['B'].width = 30
-
+            
             # ===== Sheet 2: Kassirlar =====
             ws2 = wb.create_sheet("Kassirlar")
-
+            
             cashier_headers = ["№", "Kassir", "Sotuvlar", "Jami summa", "To'langan", "Qarz"]
             for col, header in enumerate(cashier_headers, 1):
                 cell = ws2.cell(row=1, column=col, value=header)
                 cell.font = header_font
                 cell.fill = header_fill
                 cell.border = border
-
+            
             for idx, c in enumerate(data.get('cashiers', []), 1):
                 ws2.cell(row=idx+1, column=1, value=idx).border = border
                 ws2.cell(row=idx+1, column=2, value=c.get('name', '')).border = border
@@ -622,44 +622,44 @@ Rahmat! 🙏
                 ws2.cell(row=idx+1, column=4, value=fmt_money(c.get('total_amount', 0))).border = border
                 ws2.cell(row=idx+1, column=5, value=fmt_money(c.get('paid_amount', 0))).border = border
                 ws2.cell(row=idx+1, column=6, value=fmt_money(c.get('debt_amount', 0))).border = border
-
+            
             for col in range(1, 7):
                 ws2.column_dimensions[get_column_letter(col)].width = 18
-
+            
             # ===== Sheet 3: Sotilgan tovarlar =====
             ws3 = wb.create_sheet("Sotilgan tovarlar")
-
+            
             product_headers = ["№", "Mahsulot", "Miqdor", "O'lchov", "Summa"]
             for col, header in enumerate(product_headers, 1):
                 cell = ws3.cell(row=1, column=col, value=header)
                 cell.font = header_font
                 cell.fill = header_fill
                 cell.border = border
-
+            
             for idx, p in enumerate(data.get('products', []), 1):
                 ws3.cell(row=idx+1, column=1, value=idx).border = border
                 ws3.cell(row=idx+1, column=2, value=p.get('name', '')).border = border
                 ws3.cell(row=idx+1, column=3, value=float(p.get('quantity', 0))).border = border
                 ws3.cell(row=idx+1, column=4, value=p.get('uom', '')).border = border
                 ws3.cell(row=idx+1, column=5, value=fmt_money(p.get('total', 0))).border = border
-
+            
             ws3.column_dimensions['A'].width = 8
             ws3.column_dimensions['B'].width = 40
             ws3.column_dimensions['C'].width = 15
             ws3.column_dimensions['D'].width = 12
             ws3.column_dimensions['E'].width = 20
-
+            
             # ===== Sheet 4: Qarzdorlar =====
             ws4 = wb.create_sheet("Bugungi qarzdorlar")
             ws4.sheet_properties.tabColor = "FF0000"
-
+            
             debtor_headers = ["№", "Mijoz", "Telefon", "Qarz summasi"]
             for col, header in enumerate(debtor_headers, 1):
                 cell = ws4.cell(row=1, column=col, value=header)
                 cell.font = header_font
                 cell.fill = PatternFill(start_color="C00000", end_color="C00000", fill_type="solid")
                 cell.border = border
-
+            
             for idx, d in enumerate(data.get('debtors', []), 1):
                 ws4.cell(row=idx+1, column=1, value=idx).border = border
                 ws4.cell(row=idx+1, column=2, value=d.get('name', '')).border = border
@@ -667,36 +667,36 @@ Rahmat! 🙏
                 cell = ws4.cell(row=idx+1, column=4, value=fmt_money(d.get('debt_amount', 0)))
                 cell.border = border
                 cell.font = debt_font
-
+            
             for col in range(1, 5):
                 ws4.column_dimensions[get_column_letter(col)].width = 20
-
+            
             # ===== Sheet 5: Kam qolgan tovarlar =====
             ws5 = wb.create_sheet("Kam qolgan tovarlar")
             ws5.sheet_properties.tabColor = "FFA500"
-
+            
             low_headers = ["№", "Mahsulot", "Qoldiq", "O'lchov"]
             for col, header in enumerate(low_headers, 1):
                 cell = ws5.cell(row=1, column=col, value=header)
                 cell.font = header_font
                 cell.fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")
                 cell.border = border
-
+            
             for idx, item in enumerate(data.get('low_stock', []), 1):
                 ws5.cell(row=idx+1, column=1, value=idx).border = border
                 ws5.cell(row=idx+1, column=2, value=item.get('name', '')).border = border
                 ws5.cell(row=idx+1, column=3, value=float(item.get('quantity', 0))).border = border
                 ws5.cell(row=idx+1, column=4, value=item.get('uom', '')).border = border
-
+            
             for col in range(1, 5):
                 ws5.column_dimensions[get_column_letter(col)].width = 20
-
+            
             # Save to bytes
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
             return output.getvalue()
-
+            
         except Exception as e:
             logger.error(f"Failed to generate Excel: {e}")
             return None

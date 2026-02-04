@@ -21,20 +21,20 @@ def get_director_ids_from_db() -> List[str]:
     Returns list of director IDs.
     """
     try:
-        from database.connection import SessionLocal
+        from database.connection import db
         from database.models import SystemSetting
-        
-        db = SessionLocal()
+
+        session = db.get_session_direct()
         try:
-            setting = db.query(SystemSetting).filter(
+            setting = session.query(SystemSetting).filter(
                 SystemSetting.key == "director_telegram_ids"
             ).first()
-            
+
             if setting and setting.value:
                 return [id.strip() for id in setting.value.split(",") if id.strip()]
             return []
         finally:
-            db.close()
+            session.close()
     except Exception as e:
         logger.error(f"Error fetching director IDs from database: {e}")
         return []
@@ -42,11 +42,11 @@ def get_director_ids_from_db() -> List[str]:
 
 class TelegramNotifier:
     """Client for sending notifications to Telegram Bot service."""
-    
+
     def __init__(self, base_url: str = None):
         self.base_url = base_url or TELEGRAM_BOT_URL
         self.timeout = 30.0
-    
+
     async def send_purchase_notification(
         self,
         customer_telegram_id: Optional[str],
@@ -64,15 +64,11 @@ class TelegramNotifier:
     ) -> Dict[str, Any]:
         """
         Send purchase notification to Telegram Bot service.
-        
+        Sends to ALL sales (not just VIP).
+
         Returns:
             Dict with notification result
         """
-        # Only send for VIP customers
-        if customer_type.upper() != "VIP":
-            logger.debug(f"Skipping notification - customer {customer_name} is not VIP")
-            return {"success": True, "skipped": True, "reason": "Not VIP"}
-        
         payload = {
             "customer_telegram_id": customer_telegram_id,
             "customer_name": customer_name,
@@ -87,14 +83,14 @@ class TelegramNotifier:
             "operator_name": operator_name,
             "director_ids": director_ids or []
         }
-        
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/notify/purchase",
                     json=payload
                 )
-                
+
                 if response.status_code == 200:
                     result = response.json()
                     logger.info(f"Purchase notification sent for {customer_name}: {result}")
@@ -105,14 +101,14 @@ class TelegramNotifier:
                         "success": False,
                         "error": f"HTTP {response.status_code}: {response.text}"
                     }
-                    
+
         except httpx.ConnectError:
             logger.warning("Telegram Bot service not available - notification skipped")
             return {"success": False, "error": "Telegram Bot service not available"}
         except Exception as e:
             logger.error(f"Error sending purchase notification: {e}")
             return {"success": False, "error": str(e)}
-    
+
     async def send_payment_notification(
         self,
         customer_telegram_id: Optional[str],
@@ -129,15 +125,11 @@ class TelegramNotifier:
     ) -> Dict[str, Any]:
         """
         Send payment notification to Telegram Bot service.
-        
+        Sends for ALL payments (not just VIP).
+
         Returns:
             Dict with notification result
         """
-        # Only send for VIP customers
-        if customer_type.upper() != "VIP":
-            logger.debug(f"Skipping notification - customer {customer_name} is not VIP")
-            return {"success": True, "skipped": True, "reason": "Not VIP"}
-        
         payload = {
             "customer_telegram_id": customer_telegram_id,
             "customer_name": customer_name,
@@ -151,14 +143,14 @@ class TelegramNotifier:
             "operator_name": operator_name,
             "director_ids": director_ids or []
         }
-        
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/notify/payment",
                     json=payload
                 )
-                
+
                 if response.status_code == 200:
                     result = response.json()
                     logger.info(f"Payment notification sent for {customer_name}: {result}")
@@ -169,14 +161,14 @@ class TelegramNotifier:
                         "success": False,
                         "error": f"HTTP {response.status_code}: {response.text}"
                     }
-                    
+
         except httpx.ConnectError:
             logger.warning("Telegram Bot service not available - notification skipped")
             return {"success": False, "error": "Telegram Bot service not available"}
         except Exception as e:
             logger.error(f"Error sending payment notification: {e}")
             return {"success": False, "error": str(e)}
-    
+
     async def health_check(self) -> bool:
         """Check if Telegram Bot service is available."""
         try:
@@ -212,10 +204,10 @@ def send_purchase_notification_sync(
     """
     import asyncio
     import threading
-    
+
     # Get director IDs from database
     director_ids = get_director_ids_from_db()
-    
+
     def run_async():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -238,7 +230,7 @@ def send_purchase_notification_sync(
             )
         finally:
             loop.close()
-    
+
     # Run in background thread to not block
     thread = threading.Thread(target=run_async, daemon=True)
     thread.start()
@@ -263,10 +255,10 @@ def send_payment_notification_sync(
     """
     import asyncio
     import threading
-    
+
     # Get director IDs from database
     director_ids = get_director_ids_from_db()
-    
+
     def run_async():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -288,7 +280,7 @@ def send_payment_notification_sync(
             )
         finally:
             loop.close()
-    
+
     # Run in background thread to not block
     thread = threading.Thread(target=run_async, daemon=True)
     thread.start()

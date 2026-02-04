@@ -17,6 +17,8 @@ from schemas.customer import (
 )
 from schemas.base import SuccessResponse, DeleteResponse
 from services.customer import CustomerService
+from services.telegram_notifier import send_payment_notification_sync
+from utils.helpers import get_tashkent_now
 
 
 router = APIRouter()
@@ -297,6 +299,13 @@ async def pay_customer_debt(
     """Record debt payment from customer."""
     service = CustomerService(db)
     
+    # Get customer before payment
+    customer_before = service.get_customer_by_id(customer_id)
+    if not customer_before:
+        raise HTTPException(status_code=404, detail="Mijoz topilmadi")
+    
+    previous_debt = float(customer_before.current_debt) if customer_before else 0
+    
     success, message, change = service.pay_debt(
         customer_id,
         data.amount,
@@ -309,6 +318,26 @@ async def pay_customer_debt(
         raise HTTPException(status_code=400, detail=message)
     
     customer = service.get_customer_by_id(customer_id)
+    
+    # Send Telegram notification for debt payment
+    try:
+        operator_name = f"{current_user.first_name} {current_user.last_name}"
+        
+        send_payment_notification_sync(
+            customer_telegram_id=customer.telegram_id if customer else None,
+            customer_name=customer.name if customer else "Noma'lum",
+            customer_phone=customer.phone if customer else "",
+            customer_type=customer.customer_type.name if customer else "STANDARD",
+            payment_date=get_tashkent_now(),
+            payment_amount=float(data.amount),
+            payment_type=data.payment_type.value if hasattr(data.payment_type, 'value') else str(data.payment_type),
+            previous_debt=previous_debt,
+            current_debt=float(customer.current_debt),
+            operator_name=operator_name
+        )
+    except Exception as e:
+        import logging
+        logging.error(f"Failed to send payment notification: {e}")
     
     return {
         "success": True,

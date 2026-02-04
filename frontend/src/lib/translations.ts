@@ -472,12 +472,17 @@ type TranslationKeys = {
   writeOff: string
   movementHistoryNotFound: string
   stockIncomeUsd: string
+  stockIncome: string
   currentRateInfo: string
   invoiceNo: string
   productsLabel: string
   measureUnit: string
   totalUsd: string
+  totalUzs: string
   inUzs: string
+  inUsd: string
+  currency: string
+  incomeSuccess: string
   saveIncome: string
   editMovementTitle: string
   quantityChangeWarning: string
@@ -1039,12 +1044,17 @@ export const translations: Record<LanguageCode, TranslationKeys> = {
     writeOff: 'Zarar',
     movementHistoryNotFound: 'Harakatlar tarixi topilmadi',
     stockIncomeUsd: 'Omborga kirim (USD)',
+    stockIncome: 'Omborga kirim',
     currentRateInfo: 'Joriy kurs',
     invoiceNo: 'Faktura №',
     productsLabel: 'Tovarlar',
     measureUnit: "O'lchov",
     totalUsd: 'Jami (USD)',
+    totalUzs: "Jami (so'm)",
     inUzs: "So'mda",
+    inUsd: 'Dollarda',
+    currency: 'Valyuta',
+    incomeSuccess: 'Kirim muvaffaqiyatli amalga oshirildi!',
     saveIncome: 'Kirimni saqlash',
     editMovementTitle: 'Harakatni tahrirlash',
     quantityChangeWarning: "Miqdorni o'zgartirsangiz, ombor qoldig'i avtomatik yangilanadi.",
@@ -1605,12 +1615,17 @@ export const translations: Record<LanguageCode, TranslationKeys> = {
     writeOff: 'Списание',
     movementHistoryNotFound: 'История движений не найдена',
     stockIncomeUsd: 'Приход на склад (USD)',
+    stockIncome: 'Приход на склад',
     currentRateInfo: 'Текущий курс',
     invoiceNo: 'Счет-фактура №',
     productsLabel: 'Товары',
     measureUnit: 'Ед. изм.',
     totalUsd: 'Итого (USD)',
+    totalUzs: 'Итого (сум)',
     inUzs: 'В сумах',
+    inUsd: 'В долларах',
+    currency: 'Валюта',
+    incomeSuccess: 'Приход успешно оформлен!',
     saveIncome: 'Сохранить приход',
     editMovementTitle: 'Редактировать движение',
     quantityChangeWarning: 'При изменении количества остаток на складе обновится автоматически.',
@@ -2171,12 +2186,17 @@ export const translations: Record<LanguageCode, TranslationKeys> = {
     writeOff: 'Зарар',
     movementHistoryNotFound: 'Ҳаракатлар тарихи топилмади',
     stockIncomeUsd: 'Омборга кирим (USD)',
+    stockIncome: 'Омборга кирим',
     currentRateInfo: 'Жорий курс',
     invoiceNo: 'Фактура №',
     productsLabel: 'Товарлар',
     measureUnit: 'Ўлчов',
     totalUsd: 'Жами (USD)',
+    totalUzs: 'Жами (сўм)',
     inUzs: 'Сўмда',
+    inUsd: 'Долларда',
+    currency: 'Валюта',
+    incomeSuccess: 'Кирим муваффақиятли амалга оширилди!',
     saveIncome: 'Киримни сақлаш',
     editMovementTitle: 'Ҳаракатни таҳрирлаш',
     quantityChangeWarning: 'Миқдорни ўзгартирсангиз, омбор қолдиғи автоматик янгиланади.',

@@ -5,8 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d66de22b-1f00-4167-b7c4-4f73674c7aed" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backup/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backup/backup_server.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backup/entrypoint.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/POS.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/POS.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/routers/customers.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/customers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/routers/sales.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/sales.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/services/sale.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/services/sale.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/services/telegram_notifier.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/services/telegram_notifier.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/lib/translations.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/lib/translations.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/telegram_bot/http_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/http_server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/telegram_bot/notification_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/notification_service.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -16,9 +28,21 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 0
-}]]></component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;saideey&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/saideey/GayratStroy.git&quot;,
+    &quot;accountId&quot;: &quot;59450850-639c-480f-9048-f6d7d1f69520&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
   <component name="ProjectId" id="38wAf3VgejltIGsJrp1Y5T9Ryqu" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -29,19 +53,21 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "C:/Users/i.saidov/PycharmProjects/GayratStroy",
+    "last_opened_file_path": "C:/Users/i.saidov/PycharmProjects/GayratStroy/backup",
     "to.speed.mode.migration.done": "true"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\backup" />
+      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\telegram_bot" />
+      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\API\routers" />
+      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\API\services" />
       <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy" />
-      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\frontend\src\components\layout" />
-      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\frontend\src\pages" />
-      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\frontend\public" />
     </key>
   </component>
   <component name="SharedIndexes">

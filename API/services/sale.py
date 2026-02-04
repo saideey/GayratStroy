@@ -60,7 +60,7 @@ class SaleService:
         
         if warehouse_id:
             query = query.filter(Sale.warehouse_id == warehouse_id)
-
+        
         if payment_status:
             # String yoki PaymentStatus enum bo'lishi mumkin
             if isinstance(payment_status, str):
@@ -319,9 +319,8 @@ class SaleService:
         self.db.commit()
         self.db.refresh(sale)
 
-        # Send Telegram notification for VIP customers
-        if customer and customer.customer_type == CustomerType.VIP:
-            self._send_purchase_notification(sale, customer, sale_items, seller_id)
+        # Send Telegram notification for ALL sales (not just VIP)
+        self._send_purchase_notification(sale, customer, sale_items, seller_id)
 
         return sale, f"Sotuv muvaffaqiyatli yaratildi: {sale.sale_number}"
 
@@ -589,11 +588,11 @@ class SaleService:
     def _send_purchase_notification(
         self,
         sale: Sale,
-        customer: Customer,
+        customer: Optional[Customer],
         sale_items: List[SaleItem],
         seller_id: int
     ):
-        """Send purchase notification to VIP customer via Telegram."""
+        """Send purchase notification to Telegram for ALL sales."""
         try:
             # Get seller name
             from database.models import User
@@ -617,12 +616,18 @@ class SaleService:
                     "total_price": float(item.total_price)
                 })
 
+            # Customer info (may be None)
+            customer_telegram_id = customer.telegram_id if customer else None
+            customer_name = customer.name if customer else "Noma'lum mijoz"
+            customer_phone = customer.phone if customer else ""
+            customer_type = customer.customer_type.name if customer else "STANDARD"
+
             # Send notification (fire-and-forget)
             send_purchase_notification_sync(
-                customer_telegram_id=customer.telegram_id,
-                customer_name=customer.name,
-                customer_phone=customer.phone,
-                customer_type=customer.customer_type.name,
+                customer_telegram_id=customer_telegram_id,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                customer_type=customer_type,
                 sale_number=sale.sale_number,
                 sale_date=sale.created_at or get_tashkent_now(),
                 items=items,

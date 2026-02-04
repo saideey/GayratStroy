@@ -66,6 +66,7 @@ class HTTPServer:
     async def handle_purchase_notification(self, request: web.Request) -> web.Response:
         """
         Handle purchase notification request.
+        Sends notification for ALL sales (not just VIP).
         
         Expected JSON body:
         {
@@ -95,23 +96,13 @@ class HTTPServer:
             data = await request.json()
             
             # Validate required fields
-            required_fields = ['customer_name', 'sale_number', 'items', 'total_amount']
+            required_fields = ['sale_number', 'items', 'total_amount']
             for field in required_fields:
                 if field not in data:
                     return web.json_response({
                         "success": False,
                         "error": f"Missing required field: {field}"
                     }, status=400)
-            
-            # Check if customer is VIP
-            customer_type = data.get('customer_type', '').upper()
-            if customer_type != 'VIP':
-                return web.json_response({
-                    "success": True,
-                    "message": "Notification skipped - customer is not VIP",
-                    "customer_notified": False,
-                    "director_notified": False
-                })
             
             # Parse sale date
             sale_date = data.get('sale_date')
@@ -123,10 +114,10 @@ class HTTPServer:
             else:
                 sale_date = datetime.now()
             
-            # Send notification
+            # Send notification (for ALL sales, not just VIP)
             result = await self.notification_service.send_purchase_notification(
                 customer_telegram_id=data.get('customer_telegram_id'),
-                customer_name=data['customer_name'],
+                customer_name=data.get('customer_name', 'Noma\'lum mijoz'),
                 customer_phone=data.get('customer_phone', ''),
                 sale_number=data['sale_number'],
                 sale_date=sale_date,
@@ -152,6 +143,7 @@ class HTTPServer:
     async def handle_payment_notification(self, request: web.Request) -> web.Response:
         """
         Handle payment notification request.
+        Sends notification for ALL payments (not just VIP).
         
         Expected JSON body:
         {
@@ -179,16 +171,6 @@ class HTTPServer:
                         "error": f"Missing required field: {field}"
                     }, status=400)
             
-            # Check if customer is VIP
-            customer_type = data.get('customer_type', '').upper()
-            if customer_type != 'VIP':
-                return web.json_response({
-                    "success": True,
-                    "message": "Notification skipped - customer is not VIP",
-                    "customer_notified": False,
-                    "director_notified": False
-                })
-            
             # Parse payment date
             payment_date = data.get('payment_date')
             if isinstance(payment_date, str):
@@ -199,7 +181,7 @@ class HTTPServer:
             else:
                 payment_date = datetime.now()
             
-            # Send notification
+            # Send notification (for ALL payments, not just VIP)
             result = await self.notification_service.send_payment_notification(
                 customer_telegram_id=data.get('customer_telegram_id'),
                 customer_name=data['customer_name'],
