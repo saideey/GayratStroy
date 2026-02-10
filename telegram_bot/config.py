@@ -25,8 +25,8 @@ class Config:
     API_URL = os.getenv("API_URL", "http://api:8000/api/v1")
     
     # Company info for messages
-    COMPANY_NAME = os.getenv("COMPANY_NAME", "Metall Baza")
-    COMPANY_PHONE = os.getenv("COMPANY_PHONE", "+998 90 123 45 67")
+    COMPANY_NAME = os.getenv("COMPANY_NAME", "G'ayrat stroy house")
+    COMPANY_PHONE = os.getenv("COMPANY_PHONE", "+998 99 777 55 99")
     
     @classmethod
     def get_director_ids(cls) -> List[str]:

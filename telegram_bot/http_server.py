@@ -42,7 +42,7 @@ class HTTPServer:
         try:
             data = await request.json()
             chat_id = data.get('chat_id')
-            message = data.get('message', 'Test message from Metall Baza Bot')
+            message = data.get('message', 'Test message from Gayrat stroy house Bot')
             
             if not chat_id:
                 return web.json_response({

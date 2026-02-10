@@ -15,7 +15,7 @@ from openpyxl.utils import get_column_letter
 class NotificationExcelGenerator:
     """Generates Excel files for customer notifications."""
     
-    def __init__(self, company_name: str = "Metall Baza"):
+    def __init__(self, company_name: str = "G'ayrat stroy house"):
         self.company_name = company_name
     
     def _format_money(self, amount: Any) -> str:

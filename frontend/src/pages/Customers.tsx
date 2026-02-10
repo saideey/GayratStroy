@@ -238,7 +238,7 @@ export default function CustomersPage() {
       // ═══════════════════════════════════════════════════════════════
       ws.mergeCells(`A${currentRow}:K${currentRow}`)
       const titleCell = ws.getCell(`A${currentRow}`)
-      titleCell.value = '🏢 INTER PROFNASTIL - MIJOZ HISOBOTI'
+      titleCell.value = '🏢 Gayrat Stroy House - MIJOZ HISOBOTI'
       titleCell.font = { bold: true, size: 18, color: { argb: 'FF' + colors.white } }
       titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + colors.header } }
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
