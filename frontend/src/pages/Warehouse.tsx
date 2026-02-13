@@ -125,13 +125,15 @@ export default function WarehousePage() {
   const { data: productsForSelect, isLoading: productsLoading } = useQuery({
     queryKey: ['products-for-select'],
     queryFn: async () => {
-      const result = await productsService.getProducts({ per_page: 500 })
+      const result = await productsService.getProducts({ per_page: 1000, is_active: true })
       return result
     },
   })
 
-  // Safe products array
-  const productsList = productsForSelect?.data || []
+  // Safe products array - sort by name
+  const productsList = (productsForSelect?.data || []).sort((a: Product, b: Product) =>
+    a.name.localeCompare(b.name, 'uz')
+  )
 
   // Fetch UOMs
   const { data: uomsResponse } = useQuery({
@@ -837,7 +839,7 @@ export default function WarehousePage() {
                               className="w-full px-2 py-2 border border-border rounded text-sm bg-white"
                             >
                               <option value={0}>
-                                {productsLoading ? t('loading') : t('selectProduct')}
+                                {productsLoading ? t('loading') : `${t('selectProduct')} (${productsList.length} ta)`}
                               </option>
                               {productsList.map((p: Product) => (
                                 <option key={p.id} value={p.id}>{p.name}</option>

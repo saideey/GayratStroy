@@ -166,7 +166,7 @@ async def delete_category(
 )
 async def get_products(
     page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=500),
+    per_page: int = Query(20, ge=1, le=2000),
     q: Optional[str] = None,
     category_id: Optional[int] = None,
     min_price: Optional[Decimal] = None,
@@ -180,7 +180,7 @@ async def get_products(
 ):
     """Get paginated products list with filters."""
     service = ProductService(db)
-    
+
     params = ProductSearchParams(
         q=q,
         category_id=category_id,
@@ -191,9 +191,9 @@ async def get_products(
         sort_by=sort_by,
         sort_order=sort_order
     )
-    
+
     products, total = service.get_products(page, per_page, params)
-    
+
     # Build response with stock info and UOM conversions
     data = []
     for p in products:
@@ -210,7 +210,7 @@ async def get_products(
         except Exception:
             current_stock = Decimal("0")
             cost_price_usd = None
-        
+
         # Get UOM conversions with stock quantities
         uom_conversions = []
         for conv in p.uom_conversions:
@@ -227,7 +227,7 @@ async def get_products(
                 "is_default_sale_uom": conv.is_default_sale_uom,
                 "stock_quantity": round(stock_in_uom, 2),
             })
-        
+
         item = {
             "id": p.id,
             "name": p.name,
@@ -254,7 +254,7 @@ async def get_products(
             "uom_conversions": uom_conversions
         }
         data.append(item)
-    
+
     return ProductListResponse(
         data=data,
         total=total,
@@ -276,10 +276,10 @@ async def get_product(
     """Get product by ID with full details."""
     service = ProductService(db)
     product = service.get_product_by_id(product_id)
-    
+
     if not product:
         raise HTTPException(status_code=404, detail="Tovar topilmadi")
-    
+
     return ProductResponse.model_validate(product)
 
 
