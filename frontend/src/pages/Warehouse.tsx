@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useFieldArray } from 'react-hook-form'
-import { 
-  Search, Plus, Package, Warehouse as WarehouseIcon, AlertTriangle, 
+import {
+  Search, Plus, Package, Warehouse as WarehouseIcon, AlertTriangle,
   TrendingUp, Trash2, Calendar, DollarSign, History, Loader2, Filter, Download,
   Pencil, X, Info
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { 
+import {
   Button, Input, Card, CardContent, Badge,
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription
 } from '@/components/ui'
 import { warehouseService, productsService } from '@/services'
 import api from '@/services/api'
@@ -733,7 +733,7 @@ export default function WarehousePage() {
 
       {/* Income Dialog */}
       <Dialog open={showIncomeDialog} onOpenChange={setShowIncomeDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-visible">
           <DialogHeader>
             <DialogTitle>{t('stockIncome')}</DialogTitle>
             <DialogDescription>{t('currentRateInfo')}: 1$ = {formatNumber(usdRate)} {t('sum')}</DialogDescription>
@@ -807,7 +807,7 @@ export default function WarehousePage() {
                 </Button>
               </div>
 
-              <div className="border border-border rounded-pos overflow-hidden">
+              <div className="border border-border rounded-pos">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
@@ -831,10 +831,10 @@ export default function WarehousePage() {
                         : (item?.quantity || 0) * (item?.unit_price_uzs || 0)
                       return (
                         <tr key={field.id}>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 min-w-[200px]">
                             <select
                               {...register(`items.${index}.product_id`, { valueAsNumber: true })}
-                              className="w-full px-2 py-2 border border-border rounded text-sm"
+                              className="w-full px-2 py-2 border border-border rounded text-sm bg-white"
                             >
                               <option value={0}>
                                 {productsLoading ? t('loading') : t('selectProduct')}
@@ -877,7 +877,7 @@ export default function WarehousePage() {
                             ) : (
                               <Input
                                 type="number"
-                                step="100"
+                                step="1"
                                 {...register(`items.${index}.unit_price_uzs`, { valueAsNumber: true })}
                                 className="text-center text-sm w-full"
                                 placeholder="0"
@@ -1028,6 +1028,7 @@ export default function WarehousePage() {
                   <label className="font-medium text-sm">{t('priceUzs')}</label>
                   <Input
                     type="number"
+                    step="1"
                     value={editingMovement.unit_price}
                     onChange={(e) => setEditingMovement({...editingMovement, unit_price: parseFloat(e.target.value) || 0})}
                   />
