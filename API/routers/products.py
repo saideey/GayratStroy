@@ -166,7 +166,7 @@ async def delete_category(
 )
 async def get_products(
     page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=2000),
+    per_page: int = Query(20, ge=1, le=10000),
     q: Optional[str] = None,
     category_id: Optional[int] = None,
     min_price: Optional[Decimal] = None,

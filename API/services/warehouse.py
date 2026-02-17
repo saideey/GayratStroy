@@ -200,9 +200,6 @@ class StockService:
         if not conversion:
             raise ValueError("O'lchov birligi konversiyasi topilmadi")
         
-        # conversion_factor is stored as: 1 alternative_uom = X base_uom
-        # Example: 1 dona = 0.00166... tonna (if 1 tonna = 600 dona)
-        # So to convert 60000 dona to tonna: 60000 * 0.00166... = 100 tonna
         return quantity * conversion.conversion_factor
 
     def add_stock(
@@ -296,19 +293,15 @@ class StockService:
         Used for: sales, returns to supplier, write-offs.
         """
         # Convert to base UOM
-        base_quantity = self.convert_to_base_uom(product_id, Decimal(str(quantity)), uom_id)
-
-        # Round to avoid floating point issues
-        base_quantity = base_quantity.quantize(Decimal("0.0001"))
+        base_quantity = self.convert_to_base_uom(product_id, quantity, uom_id)
 
         stock = self.get_stock(product_id, warehouse_id)
         if not stock:
             return None, None, "Omborda bu tovar yo'q"
 
-        # Check availability with small tolerance
+        # Check availability
         product = self.db.query(Product).filter(Product.id == product_id).first()
-        tolerance = Decimal("0.0001")
-        if not product.allow_negative_stock and (stock.quantity + tolerance) < base_quantity:
+        if not product.allow_negative_stock and stock.quantity < base_quantity:
             available = stock.quantity
             return None, None, f"Yetarli qoldiq yo'q. Mavjud: {available}"
 
@@ -384,6 +377,7 @@ class StockService:
         movement_type: str = None,
         start_date: datetime = None,
         end_date: datetime = None,
+        search: str = None,
         page: int = 1,
         per_page: int = 20,
         include_deleted: bool = False
@@ -402,6 +396,33 @@ class StockService:
 
         if warehouse_id:
             query = query.filter(StockMovement.warehouse_id == warehouse_id)
+
+        # Search by product name or article
+        if search:
+            search_term = f"%{search}%"
+            print(f"[SEARCH DEBUG] Searching for: '{search}', search_term: '{search_term}'")
+
+            # Find matching product IDs first (simple list approach)
+            matching_products = self.db.query(Product.id, Product.name).filter(
+                or_(
+                    Product.name.ilike(search_term),
+                    Product.article.ilike(search_term)
+                )
+            ).all()
+
+            print(f"[SEARCH DEBUG] Found {len(matching_products)} matching products")
+            for p in matching_products[:5]:
+                print(f"[SEARCH DEBUG]   - Product ID: {p.id}, Name: {p.name}")
+
+            # Extract IDs as list
+            product_ids = [p.id for p in matching_products]
+            if product_ids:
+                query = query.filter(StockMovement.product_id.in_(product_ids))
+                print(f"[SEARCH DEBUG] Filtering movements by {len(product_ids)} product IDs")
+            else:
+                # No matching products found - return empty result
+                print(f"[SEARCH DEBUG] No matching products found, returning empty")
+                return [], 0
 
         if movement_type:
             # Database enum uses uppercase values (PURCHASE, SALE, etc.)
@@ -426,6 +447,11 @@ class StockService:
         total = query.count()
         offset = (page - 1) * per_page
         movements = query.order_by(StockMovement.created_at.desc()).offset(offset).limit(per_page).all()
+
+        if search:
+            print(f"[SEARCH DEBUG] Final results - Total: {total}, Returned: {len(movements)}")
+            for m in movements[:3]:
+                print(f"[SEARCH DEBUG]   - Movement ID: {m.id}, Product: {m.product.name if m.product else 'N/A'}")
 
         return movements, total
 

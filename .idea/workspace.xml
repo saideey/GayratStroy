@@ -7,6 +7,8 @@
     <list default="true" id="d66de22b-1f00-4167-b7c4-4f73674c7aed" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/API/routers/products.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/products.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/routers/warehouse.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/warehouse.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/services/warehouse.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/services/warehouse.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

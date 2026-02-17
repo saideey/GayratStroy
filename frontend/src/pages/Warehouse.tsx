@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useFieldArray } from 'react-hook-form'
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui'
 import { warehouseService, productsService } from '@/services'
 import api from '@/services/api'
-import { formatMoney, formatNumber, cn, formatDateTashkent, formatTimeTashkent } from '@/lib/utils'
+import { formatMoney, formatNumber, cn, formatDateTashkent, formatTimeTashkent, debounce } from '@/lib/utils'
 import { useAuthStore } from '@/stores'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { Stock, Warehouse, Product } from '@/types'
@@ -72,6 +72,21 @@ export default function WarehousePage() {
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
   const [showFilters, setShowFilters] = useState(false)
+  const [movementSearchInput, setMovementSearchInput] = useState('')
+  const [movementSearch, setMovementSearch] = useState('')
+
+  // Search handler - Enter yoki button bosganda
+  const handleMovementSearch = () => {
+    setMovementSearch(movementSearchInput.trim())
+    setPage(1)
+  }
+
+  // Clear search
+  const clearMovementSearch = () => {
+    setMovementSearchInput('')
+    setMovementSearch('')
+    setPage(1)
+  }
 
   // Edit/Delete state
   const [editingMovement, setEditingMovement] = useState<MovementEditData | null>(null)
@@ -125,7 +140,7 @@ export default function WarehousePage() {
   const { data: productsForSelect, isLoading: productsLoading } = useQuery({
     queryKey: ['products-for-select'],
     queryFn: async () => {
-      const result = await productsService.getProducts({ per_page: 1000, is_active: true })
+      const result = await productsService.getProducts({ per_page: 10000, is_active: true })
       return result
     },
   })
@@ -156,8 +171,8 @@ export default function WarehousePage() {
   })
 
   // Fetch stock movements (transaction history)
-  const { data: movementsData, isLoading: loadingMovements } = useQuery({
-    queryKey: ['stock-movements', selectedWarehouse, movementFilter, startDate, endDate, page],
+  const { data: movementsData, isLoading: loadingMovements, refetch: refetchMovements } = useQuery({
+    queryKey: ['stock-movements', selectedWarehouse, movementFilter, startDate, endDate, movementSearch, page],
     queryFn: async () => {
       const params = new URLSearchParams()
       if (selectedWarehouse) params.append('warehouse_id', selectedWarehouse.toString())
@@ -173,12 +188,19 @@ export default function WarehousePage() {
       if (startDate) params.append('start_date', startDate)
       if (endDate) params.append('end_date', endDate)
 
+      // Search filter - tovar nomi bo'yicha qidirish
+      if (movementSearch && movementSearch.trim()) {
+        params.append('q', movementSearch.trim())
+      }
+
       params.append('page', page.toString())
-      params.append('per_page', '30')
+      params.append('per_page', '50')
+
       const response = await api.get(`/warehouse/movements?${params}`)
       return response.data
     },
     enabled: activeTab === 'history',
+    staleTime: 0, // Always refetch when parameters change
   })
 
   // Fetch low stock count
@@ -511,9 +533,55 @@ export default function WarehousePage() {
       {/* History Tab */}
       {activeTab === 'history' && (
         <>
-          {/* Filter Panel */}
+          {/* Search & Filter Panel */}
           <Card className="mb-4">
-            <CardContent className="p-4">
+            <CardContent className="p-4 space-y-4">
+              {/* Search Input */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={movementSearchInput}
+                    onChange={(e) => setMovementSearchInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleMovementSearch()}
+                    placeholder={t('Qidiruv: ') + '... (Olma, Kraska, ...)'}
+                    className="w-full pl-10 pr-10 py-2.5 border border-border rounded-lg focus:outline-none focus:border-primary"
+                  />
+                  {movementSearchInput && (
+                    <button
+                      onClick={clearMovementSearch}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleMovementSearch}
+                  className="px-4"
+                >
+                  <Search className="w-4 h-4 mr-1" />
+                  {t('search')}
+                </Button>
+              </div>
+
+              {/* Active search indicator */}
+              {movementSearch && (
+                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg text-sm">
+                  <span className="text-blue-700">
+                    🔍 Qidiruv: "<strong>{movementSearch}</strong>"
+                  </span>
+                  <button
+                    onClick={clearMovementSearch}
+                    className="ml-auto text-blue-600 hover:text-blue-800 text-xs"
+                  >
+                    Tozalash
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-4">
                 {/* Movement Type Filter */}
                 <div className="flex items-center gap-2">
