@@ -609,6 +609,16 @@ async def update_movement(
             if unit_price is not None:
                 stock.last_purchase_cost = unit_price
 
+        # ===== UPDATE PRODUCT COST PRICE =====
+        from database.models import Product
+        product = db.query(Product).filter(Product.id == movement.product_id).first()
+        if product:
+            # Update product cost_price with new average cost or last purchase cost
+            if stock and total_qty > 0:
+                product.cost_price = total_cost_uzs / total_qty
+            elif unit_price is not None:
+                product.cost_price = unit_price
+
     # Track who edited
     movement.updated_by_id = current_user.id
 
