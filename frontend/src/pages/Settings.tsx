@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Settings as SettingsIcon, DollarSign, Save, RefreshCw, Loader2, Send, Plus, Trash2, CheckCircle, XCircle, Clock, MessageSquare, Users, Globe } from 'lucide-react'
+import { Settings as SettingsIcon, DollarSign, Save, RefreshCw, Loader2, Send, Plus, Trash2, CheckCircle, XCircle, Clock, MessageSquare, Users, Globe, Download, Database } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Button, Input, Card, CardContent, Badge } from '@/components/ui'
 import api from '@/services/api'
@@ -14,16 +14,19 @@ export default function SettingsPage() {
   const [usdRate, setUsdRate] = useState('')
   const [newDirectorId, setNewDirectorId] = useState('')
   const [testingId, setTestingId] = useState<string | null>(null)
-  
+
   // Company phone settings
   const [companyPhone1, setCompanyPhone1] = useState('')
   const [companyPhone2, setCompanyPhone2] = useState('')
-  
+
   // Telegram group settings state
   const [groupChatId, setGroupChatId] = useState('')
   const [reportTime, setReportTime] = useState('19:00')
   const [reportEnabled, setReportEnabled] = useState(false)
   const [sendingReport, setSendingReport] = useState(false)
+
+  // Database backup state
+  const [downloadingBackup, setDownloadingBackup] = useState(false)
 
   // Fetch exchange rate
   const { data: exchangeRateData, isLoading } = useQuery({
@@ -33,7 +36,7 @@ export default function SettingsPage() {
       return response.data
     }
   })
-  
+
   // Set USD rate when data loads
   useEffect(() => {
     if (exchangeRateData?.usd_rate) {
@@ -49,7 +52,7 @@ export default function SettingsPage() {
       return response.data
     }
   })
-  
+
   // Set company phones when data loads
   useEffect(() => {
     if (companyPhonesData?.data) {
@@ -77,7 +80,7 @@ export default function SettingsPage() {
     staleTime: 0, // Always fetch fresh data
     cacheTime: 0  // Don't cache
   })
-  
+
   // Set group settings when data loads
   useEffect(() => {
     if (groupSettingsData?.data) {
@@ -111,13 +114,13 @@ export default function SettingsPage() {
     },
     onSuccess: (data) => {
       if (data.success) {
-        toast.success(t('dailyReportSent'))
+        toast.success('Kunlik hisobot yuborildi!')
       } else {
-        toast.error(data.message || t('reportNotSent'))
+        toast.error(data.message || 'Hisobot yuborilmadi')
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || t('errorOccurred'))
+      toast.error(error.response?.data?.detail || 'Xatolik yuz berdi')
     },
     onSettled: () => {
       setSendingReport(false)
@@ -162,13 +165,13 @@ export default function SettingsPage() {
     },
     onSuccess: (data) => {
       if (data.success) {
-        toast.success(t('testMessageSent'))
+        toast.success('Test xabar yuborildi!')
       } else {
-        toast.error(data.message || t('messageNotSent'))
+        toast.error(data.message || 'Xabar yuborilmadi')
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || t('errorOccurred'))
+      toast.error(error.response?.data?.detail || 'Xatolik yuz berdi')
     },
     onSettled: () => {
       setTestingId(null)
@@ -295,8 +298,8 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Save Button */}
-                <Button 
-                  variant="success" 
+                <Button
+                  variant="success"
                   className="w-full"
                   onClick={handleSaveExchangeRate}
                   disabled={updateExchangeRate.isPending}
@@ -354,8 +357,8 @@ export default function SettingsPage() {
                 <p>{t('receiptSettings')}</p>
               </div>
 
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 className="w-full"
                 onClick={() => updateCompanyPhones.mutate()}
                 disabled={updateCompanyPhones.isPending}
@@ -390,10 +393,10 @@ export default function SettingsPage() {
             </div>
 
             <LanguageSwitcher variant="full" />
-            
+
             <div className="mt-4 bg-purple-50 p-3 rounded-lg text-xs text-purple-800">
               <p>
-                {language === 'ru' 
+                {language === 'ru'
                   ? 'Выбранный язык будет сохранен в вашем профиле и загрузится при следующем входе.'
                   : language === 'uz_cyrl'
                   ? 'Танланган тил профилингизда сақланади ва кейинги сафар киришда юкланади.'
@@ -439,7 +442,7 @@ export default function SettingsPage() {
                   <p className="text-xs text-text-secondary mb-2">
                     {t('telegramNotifications')}
                   </p>
-                  
+
                   {(telegramData?.data?.telegram_ids || []).length === 0 ? (
                     <p className="text-sm text-text-secondary bg-gray-50 p-3 rounded-pos">
                       Hali hech qanday ID qo'shilmagan
@@ -624,7 +627,7 @@ export default function SettingsPage() {
                 {/* Divider */}
                 <div className="border-t border-border pt-4">
                   <p className="text-sm font-medium mb-3">{t('test')}</p>
-                  
+
                   {/* Send Now Button */}
                   <Button
                     variant="secondary"
@@ -671,7 +674,7 @@ export default function SettingsPage() {
         <Card>
           <CardContent className="p-6">
             <h2 className="text-pos-lg font-bold mb-4">{t('generalSettings')}</h2>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-text-secondary">{t('version')}</span>
@@ -693,11 +696,104 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Database Backup Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <Database className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-pos-lg font-bold">Ma'lumotlar Bazasi</h2>
+                <p className="text-sm text-text-secondary">Backup yuklab olish</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-700 mb-2">
+                  <strong>📦 Backup nima?</strong>
+                </p>
+                <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside">
+                  <li>Barcha tovarlar va kategoriyalar</li>
+                  <li>Barcha sotuvlar va cheklar</li>
+                  <li>Barcha mijozlar va qarzdorlar</li>
+                  <li>Ombor harakatlari</li>
+                  <li>Foydalanuvchilar</li>
+                  <li>Sozlamalar</li>
+                </ul>
+              </div>
+
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <p className="text-xs text-yellow-700">
+                  ⚠️ <strong>Maslahat:</strong> Har kuni ish yakunida backup oling va xavfsiz joyda saqlang.
+                </p>
+              </div>
+
+              <Button
+                variant="primary"
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={async () => {
+                  setDownloadingBackup(true)
+                  try {
+                    const response = await api.get('/settings/database/backup', {
+                      responseType: 'blob'
+                    })
+
+                    // Create download link
+                    const url = window.URL.createObjectURL(new Blob([response.data]))
+                    const link = document.createElement('a')
+                    link.href = url
+
+                    // Get filename from header or generate
+                    const contentDisposition = response.headers['content-disposition']
+                    let filename = `${new Date().toLocaleDateString('ru-RU').replace(/\//g, '.')}.sql`
+                    if (contentDisposition) {
+                      const match = contentDisposition.match(/filename=(.+)/)
+                      if (match) filename = match[1]
+                    }
+
+                    link.setAttribute('download', filename)
+                    document.body.appendChild(link)
+                    link.click()
+                    link.remove()
+                    window.URL.revokeObjectURL(url)
+
+                    toast.success(`Backup yuklandi: ${filename}`)
+                  } catch (error: any) {
+                    console.error('Backup error:', error)
+                    toast.error(error.response?.data?.detail || 'Backup yuklab olishda xatolik')
+                  } finally {
+                    setDownloadingBackup(false)
+                  }
+                }}
+                disabled={downloadingBackup}
+              >
+                {downloadingBackup ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Yuklanmoqda...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5 mr-2" />
+                    Backup Yuklab Olish
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs text-center text-text-secondary">
+                Fayl nomi: {new Date().toLocaleDateString('ru-RU').replace(/\//g, '.')}.sql
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Sales Settings Card */}
         <Card>
           <CardContent className="p-6">
             <h2 className="text-pos-lg font-bold mb-4">{t('salesSettings')}</h2>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>

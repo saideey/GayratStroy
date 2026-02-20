@@ -691,12 +691,154 @@ Rahmat! 🙏
             for col in range(1, 5):
                 ws5.column_dimensions[get_column_letter(col)].width = 20
             
+            # ===== Sheet 6: BARCHA QARZDORLAR (umumiy ro'yxat) =====
+            all_debtors = data.get('all_debtors', [])
+            if all_debtors:
+                ws6 = wb.create_sheet("BARCHA QARZDORLAR")
+                ws6.sheet_properties.tabColor = "8B0000"
+
+                # Header
+                ws6.merge_cells('A1:F1')
+                ws6['A1'] = f"BARCHA QARZDORLAR RO'YXATI - {report_date.strftime('%d.%m.%Y')}"
+                ws6['A1'].font = Font(bold=True, size=14)
+                ws6['A1'].alignment = Alignment(horizontal='center')
+
+                ws6.merge_cells('A2:F2')
+                ws6['A2'] = f"Jami qarzdorlar soni: {len(all_debtors)} | Umumiy qarz: {fmt_money(sum(d.get('total_debt', 0) for d in all_debtors)):,.0f} so'm"
+                ws6['A2'].font = Font(bold=True, size=11, color="DC143C")
+                ws6['A2'].alignment = Alignment(horizontal='center')
+
+                # Table headers
+                all_debt_headers = ["№", "Mijoz ismi", "Telefon", "Umumiy qarz", "Qarz savdolar", "Oxirgi to'lov"]
+                for col, header in enumerate(all_debt_headers, 1):
+                    cell = ws6.cell(row=4, column=col, value=header)
+                    cell.font = header_font
+                    cell.fill = PatternFill(start_color="8B0000", end_color="8B0000", fill_type="solid")
+                    cell.border = border
+                    cell.alignment = Alignment(horizontal='center')
+
+                for idx, debtor in enumerate(all_debtors, 1):
+                    row = idx + 4
+                    ws6.cell(row=row, column=1, value=idx).border = border
+                    ws6.cell(row=row, column=2, value=debtor.get('name', '')).border = border
+                    ws6.cell(row=row, column=3, value=debtor.get('phone', '')).border = border
+
+                    debt_cell = ws6.cell(row=row, column=4, value=fmt_money(debtor.get('total_debt', 0)))
+                    debt_cell.border = border
+                    debt_cell.font = debt_font
+                    debt_cell.number_format = '#,##0'
+
+                    ws6.cell(row=row, column=5, value=debtor.get('sales_count', 0)).border = border
+
+                    # Last payment
+                    payments = debtor.get('payments', [])
+                    last_payment = payments[0] if payments else None
+                    if last_payment:
+                        ws6.cell(row=row, column=6, value=f"{last_payment.get('date', '')} - {fmt_money(last_payment.get('amount', 0)):,.0f}").border = border
+                    else:
+                        ws6.cell(row=row, column=6, value="To'lov yo'q").border = border
+
+                ws6.column_dimensions['A'].width = 6
+                ws6.column_dimensions['B'].width = 30
+                ws6.column_dimensions['C'].width = 18
+                ws6.column_dimensions['D'].width = 20
+                ws6.column_dimensions['E'].width = 15
+                ws6.column_dimensions['F'].width = 25
+
+                # ===== Sheet 7: QARZDORLAR TAFSILOTI =====
+                ws7 = wb.create_sheet("Qarzdorlar tafsiloti")
+                ws7.sheet_properties.tabColor = "8B0000"
+
+                current_row = 1
+
+                for debtor in all_debtors[:50]:  # Top 50 debtors with details
+                    # Debtor header
+                    ws7.merge_cells(f'A{current_row}:G{current_row}')
+                    header_cell = ws7.cell(row=current_row, column=1,
+                        value=f"👤 {debtor.get('name', '')} | 📱 {debtor.get('phone', '')} | 💰 Qarz: {fmt_money(debtor.get('total_debt', 0)):,.0f} so'm")
+                    header_cell.font = Font(bold=True, size=12, color="FFFFFF")
+                    header_cell.fill = PatternFill(start_color="8B0000", end_color="8B0000", fill_type="solid")
+                    header_cell.alignment = Alignment(horizontal='left')
+                    current_row += 1
+
+                    # Sales section
+                    sales = debtor.get('sales', [])
+                    if sales:
+                        ws7.cell(row=current_row, column=1, value="📋 QARZ SAVDOLARI:").font = Font(bold=True, size=10)
+                        current_row += 1
+
+                        # Sales headers
+                        sale_headers = ["Sana", "Chek №", "Tovarlar", "Jami", "To'langan", "Qarz"]
+                        for col, h in enumerate(sale_headers, 1):
+                            cell = ws7.cell(row=current_row, column=col, value=h)
+                            cell.font = Font(bold=True, size=9)
+                            cell.fill = PatternFill(start_color="D3D3D3", end_color="D3D3D3", fill_type="solid")
+                            cell.border = border
+                        current_row += 1
+
+                        for sale in sales[:10]:  # Last 10 sales
+                            # Items summary
+                            items_text = ", ".join([f"{i.get('product', '')[:20]} ({i.get('quantity', 0)} {i.get('uom', '')})"
+                                                   for i in sale.get('items', [])[:3]])
+                            if len(sale.get('items', [])) > 3:
+                                items_text += f" +{len(sale.get('items', [])) - 3} ta"
+
+                            ws7.cell(row=current_row, column=1, value=f"{sale.get('date', '')} {sale.get('time', '')}").border = border
+                            ws7.cell(row=current_row, column=2, value=sale.get('sale_number', '')).border = border
+                            ws7.cell(row=current_row, column=3, value=items_text[:50]).border = border
+                            ws7.cell(row=current_row, column=4, value=fmt_money(sale.get('total_amount', 0))).border = border
+                            ws7.cell(row=current_row, column=5, value=fmt_money(sale.get('paid_amount', 0))).border = border
+
+                            debt_cell = ws7.cell(row=current_row, column=6, value=fmt_money(sale.get('debt_amount', 0)))
+                            debt_cell.border = border
+                            debt_cell.font = debt_font
+                            current_row += 1
+
+                    # Payments section
+                    payments = debtor.get('payments', [])
+                    if payments:
+                        current_row += 1
+                        ws7.cell(row=current_row, column=1, value="💵 TO'LOVLAR TARIXI:").font = Font(bold=True, size=10)
+                        current_row += 1
+
+                        payment_headers = ["Sana", "Summa", "To'lov turi", "Izoh"]
+                        for col, h in enumerate(payment_headers, 1):
+                            cell = ws7.cell(row=current_row, column=col, value=h)
+                            cell.font = Font(bold=True, size=9)
+                            cell.fill = PatternFill(start_color="90EE90", end_color="90EE90", fill_type="solid")
+                            cell.border = border
+                        current_row += 1
+
+                        payment_types = {'cash': 'Naqd', 'card': 'Karta', 'transfer': "O'tkazma"}
+                        for payment in payments[:5]:  # Last 5 payments
+                            ws7.cell(row=current_row, column=1, value=payment.get('date', '')).border = border
+
+                            amount_cell = ws7.cell(row=current_row, column=2, value=fmt_money(payment.get('amount', 0)))
+                            amount_cell.border = border
+                            amount_cell.font = money_font
+
+                            ws7.cell(row=current_row, column=3, value=payment_types.get(payment.get('payment_type', ''), payment.get('payment_type', ''))).border = border
+                            ws7.cell(row=current_row, column=4, value=payment.get('notes', '')[:30]).border = border
+                            current_row += 1
+
+                    # Empty row between debtors
+                    current_row += 2
+
+                # Set column widths
+                ws7.column_dimensions['A'].width = 18
+                ws7.column_dimensions['B'].width = 15
+                ws7.column_dimensions['C'].width = 45
+                ws7.column_dimensions['D'].width = 15
+                ws7.column_dimensions['E'].width = 15
+                ws7.column_dimensions['F'].width = 15
+                ws7.column_dimensions['G'].width = 20
+
             # Save to bytes
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
             return output.getvalue()
-            
+
         except Exception as e:
             logger.error(f"Failed to generate Excel: {e}")
             return None

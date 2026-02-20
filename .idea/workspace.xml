@@ -5,11 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d66de22b-1f00-4167-b7c4-4f73674c7aed" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/API/routers/products.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/products.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/routers/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/API/routers/warehouse.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/warehouse.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/API/services/warehouse.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/services/warehouse.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Settings.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Settings.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/telegram_bot/notification_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/telegram_bot/notification_service.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

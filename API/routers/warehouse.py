@@ -205,8 +205,6 @@ async def get_movements(
     db: Session = Depends(get_db)
 ):
     """Get stock movements history."""
-    print(f"[ROUTER DEBUG] GET /movements - q='{q}', movement_type='{movement_type}', page={page}")
-
     service = StockService(db)
     movements, total = service.get_movements(
         product_id=product_id,
@@ -218,8 +216,6 @@ async def get_movements(
         page=page,
         per_page=per_page
     )
-
-    print(f"[ROUTER DEBUG] Service returned {len(movements)} movements, total={total}")
 
     data = [{
         "id": m.id,
@@ -248,8 +244,6 @@ async def get_movements(
         "created_by_name": m.created_by.first_name + " " + m.created_by.last_name if m.created_by else None,
         "updated_by_name": m.updated_by.first_name + " " + m.updated_by.last_name if getattr(m, 'updated_by', None) else None
     } for m in movements]
-
-    print(f"[ROUTER DEBUG] Returning {len(data)} items in response")
 
     return {
         "success": True,
@@ -582,6 +576,38 @@ async def update_movement(
 
     if notes is not None:
         movement.notes = notes
+
+    # ===== RECALCULATE AVERAGE COST IN STOCK =====
+    # If price changed, we need to recalculate average cost
+    if unit_price_usd is not None or unit_price is not None:
+        # Get all purchase movements for this product in this warehouse
+        all_purchases = db.query(StockMovement).filter(
+            StockMovement.product_id == movement.product_id,
+            StockMovement.warehouse_id == movement.warehouse_id,
+            StockMovement.movement_type.in_([MovementType.PURCHASE, MovementType.ADJUSTMENT_PLUS]),
+            StockMovement.is_deleted == False
+        ).all()
+
+        # Calculate weighted average cost
+        total_qty = Decimal('0')
+        total_cost_uzs = Decimal('0')
+
+        for m in all_purchases:
+            qty = Decimal(str(m.base_quantity or 0))
+            if qty > 0:
+                total_qty += qty
+                # UZS cost
+                if m.unit_cost:
+                    total_cost_uzs += qty * Decimal(str(m.unit_cost))
+
+        # Update stock average cost
+        if stock and total_qty > 0:
+            stock.average_cost = total_cost_uzs / total_qty
+            # Also update last_purchase_cost_usd if USD price was changed
+            if unit_price_usd is not None:
+                stock.last_purchase_cost_usd = unit_price_usd
+            if unit_price is not None:
+                stock.last_purchase_cost = unit_price
 
     # Track who edited
     movement.updated_by_id = current_user.id
