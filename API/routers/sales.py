@@ -19,6 +19,7 @@ from schemas.sale import (
 from schemas.base import SuccessResponse
 from services.sale import SaleService
 from services.telegram_notifier import send_payment_notification_sync
+from utils.print_helper import queue_receipt_for_printing
 
 
 router = APIRouter()
@@ -281,6 +282,36 @@ async def create_sale(
     
     if not sale:
         raise HTTPException(status_code=400, detail=message)
+
+    try:
+        # Get company phones from settings
+        company_phones_setting = db.query(SystemSetting).filter(
+            SystemSetting.key == "company_phones"
+        ).first()
+
+        company_phones = []
+        if company_phones_setting and company_phones_setting.value:
+            import json
+            phones_data = json.loads(company_phones_setting.value)
+            if phones_data.get('phone1'):
+                company_phones.append(phones_data['phone1'])
+            if phones_data.get('phone2'):
+                company_phones.append(phones_data['phone2'])
+
+        # Queue receipt
+        print_job_id = queue_receipt_for_printing(
+            db=db,
+            sale=sale,  # Sale object with items loaded
+            user_id=current_user.id,
+            company_name="METALL BAZA",  # Yoki settings dan oling
+            company_phones=company_phones
+        )
+
+        if print_job_id:
+            print(f"[PRINT] Receipt queued: job_id={print_job_id}")
+    except Exception as e:
+        # Print error should not fail the sale
+        print(f"[PRINT ERROR] {e}")
     
     return {
         "success": True,

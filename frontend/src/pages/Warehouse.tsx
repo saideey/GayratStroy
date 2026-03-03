@@ -917,6 +917,7 @@ export default function WarehousePage() {
                           <td className="px-3 py-2">
                             <Input
                               type="number"
+                              step="any"
                               {...register(`items.${index}.quantity`, { valueAsNumber: true })}
                               className="text-center text-sm w-full"
                               placeholder="0"

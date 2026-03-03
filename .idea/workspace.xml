@@ -5,13 +5,30 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d66de22b-1f00-4167-b7c4-4f73674c7aed" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/API/database/models/printer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/API/routers/printers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/API/utils/print_helper.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/pages/PrintersSettings.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/API/routers/warehouse.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/warehouse.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/database/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/database/models/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/database/models/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/database/models/user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/API/routers/sales.py" beforeDir="false" afterPath="$PROJECT_DIR$/API/routers/sales.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Settings.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Settings.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/pages/Warehouse.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -45,17 +62,17 @@
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/i.saidov/PycharmProjects/GayratStroy/backup&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/i.saidov/PycharmProjects/GayratStroy&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy" />
       <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\backup" />
       <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\telegram_bot" />
       <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\API\routers" />
       <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy\API\services" />
-      <recent name="C:\Users\i.saidov\PycharmProjects\GayratStroy" />
     </key>
   </component>
   <component name="SharedIndexes">

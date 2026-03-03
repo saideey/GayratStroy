@@ -92,6 +92,16 @@ from .settings import (
     ReportExport,
 )
 
+# Printers
+from .printer import (
+    Printer,
+    UserPrinter,
+    PrintJob,
+    PrinterType,
+    ConnectionType,
+    PrintJobStatus,
+)
+
 
 __all__ = [
     # User
@@ -100,14 +110,14 @@ __all__ = [
     'PermissionType',
     'User',
     'UserSession',
-    
+
     # Product
     'Category',
     'UnitOfMeasure',
     'Product',
     'ProductUOMConversion',
     'ProductPriceHistory',
-    
+
     # Warehouse
     'Warehouse',
     'Stock',
@@ -118,7 +128,7 @@ __all__ = [
     'InventoryCheckItem',
     'StockTransfer',
     'StockTransferItem',
-    
+
     # Customer
     'CustomerType',
     'Customer',
@@ -127,7 +137,7 @@ __all__ = [
     'CustomerGroupMember',
     'LoyaltyPoints',
     'CustomerAddress',
-    
+
     # Sale
     'PaymentStatus',
     'PaymentType',
@@ -137,7 +147,7 @@ __all__ = [
     'SaleReturn',
     'SaleReturnItem',
     'Receipt',
-    
+
     # Supplier
     'Supplier',
     'PurchaseOrderStatus',
@@ -145,7 +155,7 @@ __all__ = [
     'PurchaseOrderItem',
     'SupplierPayment',
     'SupplierPriceList',
-    
+
     # Finance
     'CashRegister',
     'TransactionType',
@@ -155,7 +165,7 @@ __all__ = [
     'BankAccount',
     'BankTransaction',
     'DailyReport',
-    
+
     # Settings
     'SystemSetting',
     'AuditLog',
@@ -166,4 +176,12 @@ __all__ = [
     'ScheduledTask',
     'FileAttachment',
     'ReportExport',
+
+    # Printers
+    'Printer',
+    'UserPrinter',
+    'PrintJob',
+    'PrinterType',
+    'ConnectionType',
+    'PrintJobStatus',
 ]

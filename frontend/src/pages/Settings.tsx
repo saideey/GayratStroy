@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Settings as SettingsIcon, DollarSign, Save, RefreshCw, Loader2, Send, Plus, Trash2, CheckCircle, XCircle, Clock, MessageSquare, Users, Globe, Download, Database } from 'lucide-react'
+import { Settings as SettingsIcon, DollarSign, Save, RefreshCw, Loader2, Send, Plus, Trash2, CheckCircle, XCircle, Clock, MessageSquare, Users, Globe, Download, Database, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Button, Input, Card, CardContent, Badge } from '@/components/ui'
 import api from '@/services/api'
 import { formatNumber, formatDateTimeTashkent } from '@/lib/utils'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import PrintersSettings from './PrintersSettings'
 
 export default function SettingsPage() {
   const queryClient = useQueryClient()
@@ -788,6 +789,11 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Printers Settings - Full Width */}
+        <div className="lg:col-span-2">
+          <PrintersSettings />
+        </div>
 
         {/* Sales Settings Card */}
         <Card>

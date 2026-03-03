@@ -21,6 +21,7 @@ from routers import (
 )
 from routers.settings import router as settings_router
 from routers.sync import router as sync_router
+from routers import printers
 
 
 @asynccontextmanager
@@ -133,6 +134,8 @@ async def health_check():
         )
 
 
+
+
 # Include routers
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users_router, prefix="/api/v1/users", tags=["Users"])
@@ -144,6 +147,11 @@ app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(sms_router, prefix="/api/v1/sms", tags=["SMS"])
 app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
 app.include_router(sync_router, prefix="/api/v1/sync", tags=["Sync"])
+app.include_router(printers.router, prefix="/api/v1/printers", tags=["Printers"])
+
+
+
+
 
 
 if __name__ == "__main__":

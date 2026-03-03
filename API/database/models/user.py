@@ -182,12 +182,15 @@ class User(BaseModel, SoftDeleteMixin):
     assigned_warehouse = relationship("Warehouse", foreign_keys=[assigned_warehouse_id])
     sales = relationship("Sale", back_populates="seller", foreign_keys="[Sale.seller_id]", lazy="dynamic")
     audit_logs = relationship("AuditLog", back_populates="user", foreign_keys="[AuditLog.user_id]", lazy="dynamic")
+    printer_assignments = relationship("UserPrinter", back_populates="user")
     
     __table_args__ = (
         Index('ix_users_role_id', 'role_id'),
         Index('ix_users_assigned_warehouse', 'assigned_warehouse_id'),
         Index('ix_users_is_active', 'is_active'),
     )
+
+
     
     @property
     def full_name(self) -> str:
