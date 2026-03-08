@@ -205,7 +205,7 @@ class SaleService:
 
             # Get stock cost for profit tracking
             stock = self.stock_service.get_stock(product.id, warehouse_id)
-            unit_cost = stock.average_cost if stock else product.cost_price
+            unit_cost = stock.average_cost if stock and stock.average_cost else (product.cost_price or Decimal("0"))
 
             sale_item = SaleItem(
                 sale_id=sale.id,
