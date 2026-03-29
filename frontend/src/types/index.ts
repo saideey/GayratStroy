@@ -67,6 +67,7 @@ export interface Product {
   base_uom_id: number
   base_uom_symbol: string
   base_uom_name?: string
+  base_uom_type?: string  // weight, length, area, volume, piece
   cost_price: number
   cost_price_usd?: number  // Cost in USD for dynamic rate calculation
   sale_price: number

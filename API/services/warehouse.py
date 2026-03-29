@@ -217,7 +217,9 @@ class StockService:
         created_by_id: int = None,
         unit_price_usd: Decimal = None,
         exchange_rate: Decimal = None,
-        supplier_name: str = None
+        supplier_name: str = None,
+        supplier_id: int = None,
+        do_commit: bool = True
     ) -> Tuple[Stock, StockMovement]:
         """
         Add stock (income).
@@ -268,11 +270,14 @@ class StockService:
             created_by_id=created_by_id,
             unit_price_usd=unit_price_usd,
             exchange_rate=exchange_rate,
-            supplier_name=supplier_name
+            supplier_name=supplier_name,
         )
+        if supplier_id:
+            movement.supplier_id = supplier_id
         self.db.add(movement)
 
-        self.db.commit()
+        if do_commit:
+            self.db.commit()
         return stock, movement
 
     def remove_stock(

@@ -31,7 +31,11 @@ type IncomeCurrency = 'USD' | 'UZS'
 interface IncomeFormData {
   warehouse_id: number
   document_number?: string
+  supplier_id?: number
   supplier_name?: string
+  paid_amount?: number
+  payment_type?: string
+  payment_comment?: string
   notes?: string
   items: IncomeItem[]
 }
@@ -157,6 +161,20 @@ export default function WarehousePage() {
   })
   const uoms = Array.isArray(uomsResponse) ? uomsResponse : []
 
+  // Ta'minotchilar (income form uchun)
+  const { data: suppliersForIncomeData } = useQuery({
+    queryKey: ['suppliers-for-income'],
+    queryFn: async () => {
+      const res = await api.get('/suppliers', { params: { per_page: 100, is_active: true } })
+      return res.data.data?.items || []
+    },
+  })
+  const suppliersForIncome = suppliersForIncomeData || []
+
+  // Watch supplier and payment fields
+  const watchedSupplierId = watch('supplier_id') || 0
+  const watchedPaidAmount = watch('paid_amount') || 0
+
   // Fetch stock
   const { data: stockData, isLoading } = useQuery({
     queryKey: ['stock', searchQuery, selectedWarehouse, selectedCategory, showLowOnly, page],
@@ -242,7 +260,11 @@ export default function WarehousePage() {
       const response = await api.post('/warehouse/income', {
         ...data,
         items: itemsWithPrices,
-        exchange_rate: usdRate
+        exchange_rate: usdRate,
+        supplier_id: data.supplier_id && data.supplier_id > 0 ? data.supplier_id : undefined,
+        paid_amount: data.paid_amount || 0,
+        payment_type: data.payment_type || undefined,
+        payment_comment: data.payment_comment || undefined,
       })
       return response.data
     },
@@ -333,6 +355,9 @@ export default function WarehousePage() {
   const incomeTotalUzs = incomeCurrency === 'UZS'
     ? (watchItems?.reduce((sum, item) => sum + (item.quantity || 0) * (item.unit_price_uzs || 0), 0) || 0)
     : incomeTotalUsd * usdRate
+
+  // UZS da jami (to'lov hisob-kitobi uchun)
+  const watchedTotal = incomeTotalUzs
 
   return (
     <div className="space-y-4 lg:space-y-6">
@@ -858,9 +883,67 @@ export default function WarehousePage() {
               </div>
               <div className="space-y-2">
                 <label className="font-medium">{t('supplier')}</label>
-                <Input {...register('supplier_name')} placeholder={t('supplierName')} />
+                <select
+                  {...register('supplier_id', { valueAsNumber: true })}
+                  className="w-full min-h-btn px-4 py-3 border-2 border-border rounded-pos"
+                >
+                  <option value={0}>— Ta'minotchisiz —</option>
+                  {suppliersForIncome?.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name}{s.company_name ? ` (${s.company_name})` : ''}</option>
+                  ))}
+                </select>
               </div>
             </div>
+
+            {/* Payment section - only if supplier selected */}
+            {watchedSupplierId > 0 && (
+              <div className="border-2 border-green-200 bg-green-50/50 rounded-xl p-4 space-y-3">
+                <h4 className="font-semibold text-green-800 flex items-center gap-2">
+                  💰 Ta'minotchiga to'lov (ixtiyoriy)
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">To'langan summa</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      {...register('paid_amount', { valueAsNumber: true })}
+                      placeholder="0 (0 bo'lsa hammasi qarz)"
+                      className="bg-white"
+                    />
+                    {watchedPaidAmount > 0 && watchedTotal > 0 && (
+                      <p className="text-xs text-green-700">
+                        Qarz: {(Math.max(0, watchedTotal - watchedPaidAmount)).toLocaleString()} so'm
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">To'lov turi</label>
+                    <select
+                      {...register('payment_type')}
+                      className="w-full px-3 py-2 border-2 border-border rounded-pos bg-white"
+                    >
+                      <option value="">— tanlang —</option>
+                      <option value="cash">Naqd</option>
+                      <option value="card">Karta</option>
+                      <option value="transfer">O'tkazma</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">To'lov izohi</label>
+                  <Input
+                    {...register('payment_comment')}
+                    placeholder="Masalan: Mart oyi mahsulotlari uchun to'lov"
+                    className="bg-white"
+                  />
+                </div>
+                <div className="bg-green-100 rounded-lg px-3 py-2 text-xs text-green-700">
+                  ℹ️ To'lov summasi kiritilmasa — jami summa qarz sifatida yoziladi.
+                  Qarz Ta'minotchilar bo'limida avtomatik ko'rinadi.
+                </div>
+              </div>
+            )}
 
             {/* Items */}
             <div className="space-y-3">

@@ -10,13 +10,18 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '002_add_usd_fields'
-down_revision = '001_initial'
+revision = 'rev_002'
+down_revision = 'rev_001'
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
+    from sqlalchemy import text
+    conn = op.get_bind()
+    exists = conn.execute(text("SELECT COUNT(*) FROM information_schema.columns WHERE table_name='stock_movements' AND column_name='supplier_name'")).scalar()
+    if exists:
+        return
     # Add new columns to stock_movements table
     op.add_column('stock_movements', sa.Column('supplier_name', sa.String(200), nullable=True))
     op.add_column('stock_movements', sa.Column('unit_price_usd', sa.Numeric(20, 4), nullable=True))

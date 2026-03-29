@@ -31,7 +31,7 @@ class DatabaseConnection:
         """Initialize database connection."""
         database_url = os.getenv(
             'DATABASE_URL',
-            'postgresql://postgres:postgres@db:5432/metall_basa'
+            'postgresql://postgres:postgres@db:5432/gayratstroy_db'
         )
         
         # Use NullPool in production to avoid stale connections

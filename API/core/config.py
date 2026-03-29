@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # Database
-    database_url: str = "postgresql://postgres:postgres@db:5432/metall_basa"
+    database_url: str = "postgresql://postgres:postgres@db:5432/gayratstroy_db"
     sql_echo: bool = False
     
     # Security

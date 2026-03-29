@@ -214,13 +214,17 @@ class StockIncomeCreate(BaseSchema):
     
     warehouse_id: int
     supplier_id: Optional[int] = None
-    supplier_name: Optional[str] = None  # Supplier name (if not linked)
+    supplier_name: Optional[str] = None
     items: List[StockIncomeItemCreate]
-    document_number: Optional[str] = None  # Supplier invoice number
+    document_number: Optional[str] = None
     document_date: Optional[date] = None
-    exchange_rate: Optional[Decimal] = None  # USD exchange rate
+    exchange_rate: Optional[Decimal] = None
     notes: Optional[str] = None
-    
+    # To'lov qismi
+    paid_amount: Optional[Decimal] = None
+    payment_type: Optional[str] = None
+    payment_comment: Optional[str] = None
+
     @field_validator("items")
     @classmethod
     def validate_items(cls, v: List[StockIncomeItemCreate]) -> List[StockIncomeItemCreate]:

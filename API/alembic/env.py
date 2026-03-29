@@ -32,12 +32,16 @@ from database.models import (
     # Supplier models
     Supplier, PurchaseOrder, PurchaseOrderItem, SupplierPayment, SupplierPriceList,
     # Finance models
-    CashRegister, CashTransaction, ExpenseCategory, CashShift,
+    CashRegister, CashTransaction, CashShift,
     BankAccount, BankTransaction, DailyReport,
     # Settings models
     SystemSetting, AuditLog, SMSTemplate, SMSLog, Notification,
     StockAlert, ScheduledTask, FileAttachment, ReportExport,
 )
+
+# New models (expenses + supplier transactions)
+from database.models.expense import ExpenseCategory, Expense, ExpenseEditLog
+from database.models.supplier import SupplierTransaction
 
 # this is the Alembic Config object
 config = context.config

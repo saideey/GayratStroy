@@ -286,6 +286,46 @@ async def get_customer_debt_history(
 
 
 @router.post(
+    "/{customer_id}/debt",
+    summary="Mijozga qarz yozish (tezkor)",
+    dependencies=[Depends(PermissionChecker([PermissionType.SALE_CREATE]))]
+)
+async def add_customer_debt(
+    customer_id: int,
+    amount: float,
+    description: str = "Tezkor qo'shish paytidagi mavjud qarz",
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Mijozga to'g'ridan-to'g'ri qarz yozish (tezkor qo'shish uchun)."""
+    from decimal import Decimal
+    service = CustomerService(db)
+    customer = service.get_customer_by_id(customer_id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Mijoz topilmadi")
+
+    success, message = service.add_debt(
+        customer_id=customer_id,
+        amount=Decimal(str(amount)),
+        description=description,
+        created_by_id=current_user.id,
+        reference_type="manual",
+        reference_id=None,
+    )
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+
+    db.refresh(customer)
+    return {
+        "success": True,
+        "message": message,
+        "data": {
+            "current_debt": float(customer.current_debt),
+        }
+    }
+
+
+@router.post(
     "/{customer_id}/pay-debt",
     summary="Qarz to'lash",
     dependencies=[Depends(PermissionChecker([PermissionType.PAYMENT_CREATE]))]

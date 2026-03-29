@@ -75,6 +75,7 @@ class Sale(BaseModel):
     # Additional info
     notes = Column(Text, nullable=True)
     internal_notes = Column(Text, nullable=True)  # Only for staff
+    contact_phone = Column(String(50), nullable=True)  # Mijoz tanlanmasa kiritilgan telefon
     
     # Delivery info
     requires_delivery = Column(Boolean, default=False)
@@ -207,7 +208,7 @@ class SaleItem(BaseModel):
     @property
     def profit(self) -> Decimal:
         """Calculate profit for this line item."""
-        return Decimal(str(self.total_price)) - (Decimal(str(self.unit_cost)) * Decimal(str(self.quantity)))
+        return Decimal(str(self.total_price)) - (Decimal(str(self.unit_cost)) * Decimal(str(self.base_quantity)))
     
     @property
     def profit_margin(self) -> Decimal:

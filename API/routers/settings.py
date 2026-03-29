@@ -1301,25 +1301,25 @@ async def download_database_backup(
 
     if database_url:
         # Parse DATABASE_URL: postgresql://user:password@host:port/dbname
-        # Example: postgresql://postgres:postgres@db:5432/metall_basa
+        # Example: postgresql://postgres:postgres@db:5432/gayratstroy_db
         try:
             from urllib.parse import urlparse
             parsed = urlparse(database_url)
             db_host = parsed.hostname or "db"
             db_port = str(parsed.port or 5432)
-            db_name = parsed.path.lstrip("/") or "metall_basa"
+            db_name = parsed.path.lstrip("/") or "gayratstroy_db"
             db_user = parsed.username or "postgres"
             db_password = parsed.password or "postgres"
         except Exception:
             db_host = os.getenv("POSTGRES_HOST", "db")
             db_port = os.getenv("POSTGRES_PORT", "5432")
-            db_name = os.getenv("POSTGRES_DB", "metall_basa")
+            db_name = os.getenv("POSTGRES_DB", "gayratstroy_db")
             db_user = os.getenv("POSTGRES_USER", "postgres")
             db_password = os.getenv("POSTGRES_PASSWORD", "postgres")
     else:
         db_host = os.getenv("POSTGRES_HOST", "db")
         db_port = os.getenv("POSTGRES_PORT", "5432")
-        db_name = os.getenv("POSTGRES_DB", "metall_basa")
+        db_name = os.getenv("POSTGRES_DB", "gayratstroy_db")
         db_user = os.getenv("POSTGRES_USER", "postgres")
         db_password = os.getenv("POSTGRES_PASSWORD", "postgres")
 

@@ -17,11 +17,14 @@ from core.config import settings
 from routers import (
     auth_router, users_router, products_router,
     customers_router, warehouse_router, sales_router,
-    reports_router, sms_router
+    reports_router, sms_router, expenses_router, suppliers_router,
+    dashboard_router
 )
 from routers.settings import router as settings_router
+from routers.dashboard import router as dashboard_router
 from routers.sync import router as sync_router
 from routers import printers
+from routers.bot import router as bot_router
 
 
 @asynccontextmanager
@@ -147,7 +150,11 @@ app.include_router(reports_router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(sms_router, prefix="/api/v1/sms", tags=["SMS"])
 app.include_router(settings_router, prefix="/api/v1/settings", tags=["Settings"])
 app.include_router(sync_router, prefix="/api/v1/sync", tags=["Sync"])
+app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["Dashboard"])
+app.include_router(expenses_router, prefix="/api/v1/expenses", tags=["Expenses"])
+app.include_router(suppliers_router, prefix="/api/v1/suppliers", tags=["Suppliers"])
 app.include_router(printers.router, prefix="/api/v1/printers", tags=["Printers"])
+app.include_router(bot_router, prefix="/api/v1/bot", tags=["Bot & WebApp"])
 
 
 

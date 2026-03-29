@@ -257,6 +257,9 @@ class QuickSaleRequest(BaseSchema):
     customer_id: Optional[int] = None
     warehouse_id: int
     
+    # Mijoz tanlanmasa kiritilgan telefon raqami
+    contact_phone: Optional[str] = None
+    
     # Final amount (optional - for manual total override)
     final_total: Optional[Decimal] = None
     

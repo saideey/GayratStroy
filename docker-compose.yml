@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-metall_baza}
+      POSTGRES_DB: ${POSTGRES_DB:-gayratstroy_db}
       TZ: ${TZ:-Asia/Tashkent}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -41,7 +41,7 @@ services:
       - "-c"
       - "log_disconnections=off"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-metall_baza}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-gayratstroy_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -54,12 +54,12 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}_api
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-metall_baza}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-gayratstroy_db}
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
       DEBUG: ${DEBUG:-false}
       SQL_ECHO: ${SQL_ECHO:-false}
       USE_NULL_POOL: "true"
-      TELEGRAM_BOT_URL: http://telegram_bot:8081
+      TELEGRAM_BOT_URL: http://telegram_bot:${BOT_PORT:-8083}
       TZ: ${TZ:-Asia/Tashkent}
     ports:
       - "${API_PORT:-8000}:8000"
@@ -85,13 +85,15 @@ services:
     environment:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       DIRECTOR_TELEGRAM_IDS: ${DIRECTOR_TELEGRAM_IDS:-}
-      COMPANY_NAME: ${COMPANY_NAME:-Metall Baza}
+      COMPANY_NAME: ${COMPANY_NAME:-G'ayrat Stroy House}
       COMPANY_PHONE: ${COMPANY_PHONE:-+998 90 123 45 67}
       BOT_HTTP_HOST: 0.0.0.0
-      BOT_HTTP_PORT: 8081
+      BOT_HTTP_PORT: ${BOT_PORT:-8083}
+      API_URL: http://api:8000/api/v1
+      WEBAPP_URL: ${WEBAPP_URL:-}
       TZ: ${TZ:-Asia/Tashkent}
     ports:
-      - "127.0.0.1:${BOT_PORT:-8081}:8081"
+      - "127.0.0.1:${BOT_PORT:-8083}:${BOT_PORT:-8083}"
     depends_on:
       - api
     volumes:
@@ -121,7 +123,7 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}_pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@metall.uz}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@gayratstroy.uz}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
@@ -142,7 +144,7 @@ services:
       DB_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-metall_baza}
+      POSTGRES_DB: ${POSTGRES_DB:-gayratstroy_db}
       BACKUP_HOUR: "0"
       BACKUP_MINUTE: "0"
       MAX_BACKUPS: "1"

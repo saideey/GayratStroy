@@ -17,6 +17,8 @@ import {
   Key,
   Receipt,
   ChevronDown,
+  TrendingDown,
+  Truck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
@@ -24,7 +26,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import api from '@/services/api'
 
 interface NavItem {
-  nameKey: 'dashboard' | 'pos' | 'sales' | 'products' | 'customers' | 'warehouse' | 'reports' | 'users' | 'settings'
+  nameKey: 'dashboard' | 'pos' | 'sales' | 'products' | 'customers' | 'warehouse' | 'reports' | 'users' | 'settings' | 'expenses' | 'suppliers'
   href: string
   icon: React.ElementType
   permission?: string
@@ -37,6 +39,8 @@ const navItems: NavItem[] = [
   { nameKey: 'products', href: '/products', icon: Package },
   { nameKey: 'customers', href: '/customers', icon: Users },
   { nameKey: 'warehouse', href: '/warehouse', icon: Warehouse },
+  { nameKey: 'suppliers', href: '/suppliers', icon: Truck },
+  { nameKey: 'expenses', href: '/expenses', icon: TrendingDown },
   { nameKey: 'reports', href: '/reports', icon: FileText, permission: 'REPORT_SALES' },
   { nameKey: 'users', href: '/users', icon: UsersRound, permission: 'USER_VIEW' },
   { nameKey: 'settings', href: '/settings', icon: Settings, permission: 'SETTINGS_VIEW' },

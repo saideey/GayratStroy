@@ -256,6 +256,7 @@ class ProductListItem(BaseSchema):
     base_uom_id: int
     base_uom_symbol: str
     base_uom_name: Optional[str] = None
+    base_uom_type: Optional[str] = "piece"  # weight, length, area, volume, piece
     cost_price: Decimal
     cost_price_usd: Optional[float] = None
     sale_price: Decimal

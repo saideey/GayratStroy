@@ -318,9 +318,9 @@ async def get_profit_report(
         Product.name.label('product_name'),
         Product.article.label('product_article'),
         func.sum(SaleItem.quantity).label('total_quantity'),
-        func.sum(SaleItem.unit_cost * SaleItem.quantity).label('total_cost'),
+        func.sum(SaleItem.unit_cost * SaleItem.base_quantity).label('total_cost'),
         func.sum(SaleItem.total_price).label('total_revenue'),
-        func.sum(SaleItem.total_price - (SaleItem.unit_cost * SaleItem.quantity)).label('total_profit')
+        func.sum(SaleItem.total_price - (SaleItem.unit_cost * SaleItem.base_quantity)).label('total_profit')
     ).join(Sale, Sale.id == SaleItem.sale_id)\
      .join(Product, Product.id == SaleItem.product_id)\
      .filter(
@@ -336,7 +336,7 @@ async def get_profit_report(
         SaleItem.product_id,
         Product.name,
         Product.article
-    ).order_by(func.sum(SaleItem.total_price - (SaleItem.unit_cost * SaleItem.quantity)).desc()).all()
+    ).order_by(func.sum(SaleItem.total_price - (SaleItem.unit_cost * SaleItem.base_quantity)).desc()).all()
     
     # Calculate totals
     total_cost = sum(r.total_cost or Decimal("0") for r in results)

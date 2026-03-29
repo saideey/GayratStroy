@@ -1,44 +1,43 @@
 """
-Metall Baza Telegram Bot
+G'ayrat Stroy House Telegram Bot
 Main entry point - starts HTTP server for receiving notifications from API.
 
 Architecture:
+- Aiogram Dispatcher handles /start, phone registration, personal cabinet
 - HTTP Server (aiohttp) listens for notification requests from main API
-- When a request comes in, it sends Telegram message to customer and director
-- Also sends Excel file with detailed information
 - Scheduler checks daily and sends reports at configured time
 
-API Endpoints:
+Bot Flow:
+  User /start → Phone request → API link-phone → Personal Cabinet Menu
+
+API Endpoints (HTTP Server):
 - POST /notify/purchase - Send purchase notification
-- POST /notify/payment - Send payment notification  
+- POST /notify/payment - Send payment notification
 - GET /health - Health check
 - POST /test - Test notification
 - POST /send-daily-report - Send daily report to group
-
-Communication Flow:
-Main API -> HTTP POST to /notify/* -> Telegram Bot -> Customer + Director
 """
 import asyncio
 import logging
 import sys
 import httpx
-from datetime import datetime, time
+from datetime import datetime
 from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import config
 from notification_service import NotificationService
 from http_server import HTTPServer
+from handlers import start as start_handler, menu as menu_handler
 
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger(__name__)
 
@@ -141,16 +140,14 @@ class DailyReportScheduler:
 
 async def main():
     """Main entry point."""
-    
+
     # Validate configuration
     try:
         config.validate()
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
-        logger.info("Please set TELEGRAM_BOT_TOKEN and DIRECTOR_TELEGRAM_ID in .env file")
-        # Don't exit - run in mock mode for development
         logger.warning("Running in MOCK mode - notifications will be logged but not sent")
-    
+
     # Initialize bot
     if config.BOT_TOKEN:
         bot = Bot(
@@ -159,32 +156,41 @@ async def main():
         )
         logger.info("Telegram Bot initialized")
     else:
-        # Create mock bot for development
         bot = None
         logger.warning("No BOT_TOKEN - running without Telegram connection")
-    
-    # Initialize services
+
+    # ── Aiogram Dispatcher ──
+    dp = None
+    if bot:
+        storage = MemoryStorage()
+        dp = Dispatcher(storage=storage)
+        dp.include_router(start_handler.router)
+        dp.include_router(menu_handler.router)
+        logger.info("✅ Handlers registered: start, menu")
+
+    # ── Services ──
     notification_service = NotificationService(bot) if bot else MockNotificationService()
     http_server = HTTPServer(notification_service)
-    
-    # Initialize scheduler with notification service
     scheduler = DailyReportScheduler(notification_service)
-    
-    # Start HTTP server
+
+    # ── aiohttp HTTP server ──
     runner = web.AppRunner(http_server.get_app())
     await runner.setup()
-    
     site = web.TCPSite(runner, config.HTTP_HOST, config.HTTP_PORT)
     await site.start()
-    
-    logger.info(f"🚀 Telegram Bot HTTP Server started on {config.HTTP_HOST}:{config.HTTP_PORT}")
-    logger.info("Endpoints:")
-    logger.info(f"  POST http://{config.HTTP_HOST}:{config.HTTP_PORT}/notify/purchase")
-    logger.info(f"  POST http://{config.HTTP_HOST}:{config.HTTP_PORT}/notify/payment")
-    logger.info(f"  POST http://{config.HTTP_HOST}:{config.HTTP_PORT}/send-daily-report")
-    logger.info(f"  GET  http://{config.HTTP_HOST}:{config.HTTP_PORT}/health")
-    
-    # Send startup notification to all directors
+
+    logger.info(f"🚀 HTTP Server started on {config.HTTP_HOST}:{config.HTTP_PORT}")
+    logger.info(f"  POST /notify/purchase  — sotuv bildirishnomasi")
+    logger.info(f"  POST /notify/payment   — to'lov bildirishnomasi")
+    logger.info(f"  POST /send-daily-report — kunlik hisobot")
+    logger.info(f"  GET  /health           — holat tekshirish")
+
+    if config.WEBAPP_URL:
+        logger.info(f"🌐 WebApp URL: {config.WEBAPP_URL}")
+    else:
+        logger.info("ℹ️  WEBAPP_URL yo'q — bot komandalar rejimida ishlaydi")
+
+    # ── Startup notification ──
     director_ids = config.get_director_ids()
     if director_ids and bot:
         for director_id in director_ids:
@@ -192,30 +198,50 @@ async def main():
                 await bot.send_message(
                     chat_id=director_id,
                     text=f"🤖 <b>{config.COMPANY_NAME} Bot ishga tushdi!</b>\n\n"
-                         f"📅 Sana: {datetime.now().strftime('%d.%m.%Y %H:%M')}\n"
-                         f"✅ VIP mijozlarga habar yuborish tayyor\n"
+                         f"📅 {datetime.now().strftime('%d.%m.%Y %H:%M')}\n"
+                         f"✅ Mijoz shaxsiy kabineti faol\n"
+                         f"✅ Bildirishnomalar tayyor\n"
                          f"📊 Kunlik hisobot scheduler faol"
                 )
-                logger.info(f"Startup notification sent to director {director_id}")
             except Exception as e:
-                logger.error(f"Failed to send startup notification to {director_id}: {e}")
-    
-    # Start scheduler
-    scheduler_task = asyncio.create_task(scheduler.run())
-    
-    # Keep running
+                logger.error(f"Startup notification error ({director_id}): {e}")
+
+    # ── Barcha tasklar birgalikda ──
+    # gather() barchasi bitta event loop da to'g'ri ishlaydi
+    tasks = [asyncio.create_task(scheduler.run())]
+
+    if bot and dp:
+        async def run_polling():
+            logger.info("🤖 Bot polling started")
+            try:
+                # drop_pending_updates=True — restart da eski xabarlarni o'tkazib yuborish
+                await dp.start_polling(
+                    bot,
+                    allowed_updates=["message", "callback_query"],
+                    drop_pending_updates=True,
+                )
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.error(f"Polling error: {e}")
+
+        tasks.append(asyncio.create_task(run_polling()))
+
     try:
-        while True:
-            await asyncio.sleep(3600)  # Sleep for 1 hour
+        # Barcha tasklar birga ishlaydi, biri to'xtaganda qolganlar ham to'xtaydi
+        await asyncio.gather(*tasks, return_exceptions=True)
     except asyncio.CancelledError:
         pass
     finally:
         scheduler.stop()
-        scheduler_task.cancel()
+        for t in tasks:
+            t.cancel()
+        # Tasklar to'xtashini kutish
+        await asyncio.gather(*tasks, return_exceptions=True)
         if bot:
             await bot.session.close()
         await runner.cleanup()
-        logger.info("Bot stopped")
+        logger.info("Bot stopped cleanly")
 
 
 class MockNotificationService:

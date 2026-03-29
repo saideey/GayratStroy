@@ -14,10 +14,10 @@ from .models import (
     Role, RoleType, PermissionType,
     UnitOfMeasure,
     SystemSetting,
-    ExpenseCategory,
     SMSTemplate,
     Warehouse,
 )
+from .models.expense import ExpenseCategory
 
 
 def seed_roles(session: Session):
@@ -424,25 +424,26 @@ def seed_system_settings(session: Session):
 def seed_expense_categories(session: Session):
     """Create default expense categories."""
 
+    existing = session.query(ExpenseCategory).first()
+    if existing:
+        print("ℹ️ Expense categories already exist, skipping")
+        return
+
     categories = [
-        ExpenseCategory(name="Ish haqi", description="Xodimlar ish haqi"),
-        ExpenseCategory(name="Ijara", description="Ombor va do'kon ijarasi"),
-        ExpenseCategory(name="Kommunal xizmatlar", description="Elektr, suv, gaz"),
-        ExpenseCategory(name="Transport", description="Yuk tashish xarajatlari"),
-        ExpenseCategory(name="Xo'jalik", description="Xo'jalik mollari"),
-        ExpenseCategory(name="Reklama", description="Reklama va marketing"),
-        ExpenseCategory(name="Ta'mirlash", description="Ta'mirlash xarajatlari"),
-        ExpenseCategory(name="Soliq", description="Soliqlar"),
-        ExpenseCategory(name="Boshqa", description="Boshqa xarajatlar"),
+        ExpenseCategory(name="Ish haqi",           description="Xodimlar ish haqi",         color="#10b981", icon="👥"),
+        ExpenseCategory(name="Ijara",               description="Ombor va do'kon ijarasi",    color="#8b5cf6", icon="🏠"),
+        ExpenseCategory(name="Kommunal xizmatlar",  description="Elektr, suv, gaz",           color="#f59e0b", icon="⚡"),
+        ExpenseCategory(name="Transport",           description="Yuk tashish xarajatlari",    color="#3b82f6", icon="🚛"),
+        ExpenseCategory(name="Xo'jalik",            description="Xo'jalik mollari",           color="#06b6d4", icon="🧹"),
+        ExpenseCategory(name="Reklama",             description="Reklama va marketing",       color="#ec4899", icon="📣"),
+        ExpenseCategory(name="Ta'mirlash",          description="Ta'mirlash xarajatlari",     color="#ef4444", icon="🔧"),
+        ExpenseCategory(name="Soliq",               description="Soliqlar",                   color="#f97316", icon="🏛️"),
+        ExpenseCategory(name="Boshqa",              description="Boshqa xarajatlar",          color="#6b7280", icon="📋"),
     ]
 
-    existing = session.query(ExpenseCategory).first()
-    if not existing:
-        session.add_all(categories)
-        session.commit()
-        print("✅ Expense categories seeded successfully")
-    else:
-        print("ℹ️ Expense categories already exist, skipping")
+    session.add_all(categories)
+    session.commit()
+    print("✅ Expense categories seeded successfully")
 
 
 def seed_sms_templates(session: Session):

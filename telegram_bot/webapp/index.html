@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Shaxsiy Kabinet</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-light: #dbeafe;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --success: #16a34a;
+    --success-light: #dcfce7;
+    --warning: #d97706;
+    --warning-light: #fef3c7;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e5e7eb;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #f8fafc);
+    color: var(--tg-theme-text-color, #1e293b);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+    padding-bottom: 80px;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--tg-theme-header-bg-color, #fff);
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .user-info h2 { font-size: 17px; font-weight: 700; }
+  .user-info p { font-size: 13px; color: var(--gray); }
+  .company-badge {
+    background: var(--primary-light); color: var(--primary);
+    font-size: 12px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+  }
+
+  /* ── Nav tabs ── */
+  .nav {
+    display: flex; gap: 4px; padding: 8px 16px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex-shrink: 0; padding: 6px 14px;
+    border: none; border-radius: 20px; cursor: pointer;
+    font-size: 13px; font-weight: 600;
+    background: transparent; color: var(--gray);
+    transition: all .2s;
+  }
+  .nav-btn.active {
+    background: var(--primary); color: #fff;
+  }
+
+  /* ── Content ── */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--tg-theme-secondary-bg-color, #fff);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  }
+  .card-title {
+    font-size: 12px; font-weight: 600; color: var(--gray);
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 10px;
+  }
+
+  /* ── Stat grid ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box {
+    background: var(--tg-theme-secondary-bg-color, #fff);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+  }
+  .stat-label { font-size: 12px; color: var(--gray); margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 700; }
+  .stat-value.red { color: var(--danger); }
+  .stat-value.green { color: var(--success); }
+  .stat-value.blue { color: var(--primary); }
+  .stat-sub { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  /* ── Sale item ── */
+  .sale-item {
+    background: var(--tg-theme-secondary-bg-color, #fff);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    cursor: pointer; transition: transform .15s;
+  }
+  .sale-item:active { transform: scale(.98); }
+  .sale-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .sale-num { font-weight: 700; font-size: 15px; }
+  .sale-date { font-size: 12px; color: var(--gray); }
+  .sale-amount { font-weight: 700; font-size: 16px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge.paid { background: var(--success-light); color: var(--success); }
+  .badge.partial { background: var(--warning-light); color: var(--warning); }
+  .badge.unpaid { background: var(--danger-light); color: var(--danger); }
+  .sale-products {
+    font-size: 13px; color: var(--gray);
+    margin-top: 6px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ── Detail modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 50;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--tg-theme-bg-color, #f8fafc);
+    border-radius: 20px 20px 0 0;
+    width: 100%; max-height: 90vh;
+    overflow-y: auto; padding: 20px;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border); border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: var(--gray); }
+  .detail-value { font-weight: 600; }
+  .product-row {
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .product-name { font-weight: 600; margin-bottom: 2px; }
+  .product-meta {
+    display: flex; justify-content: space-between;
+    font-size: 13px; color: var(--gray);
+  }
+  .close-btn {
+    width: 100%; padding: 14px;
+    background: var(--primary); color: #fff;
+    border: none; border-radius: var(--radius);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 16px;
+  }
+
+  /* ── Debt section ── */
+  .debt-banner {
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .debt-banner.has-debt { background: var(--danger-light); }
+  .debt-banner.no-debt { background: var(--success-light); }
+  .debt-amount { font-size: 28px; font-weight: 800; }
+  .debt-amount.red { color: var(--danger); }
+  .debt-amount.green { color: var(--success); }
+  .debt-label { font-size: 13px; margin-top: 2px; }
+  .debt-label.red { color: #991b1b; }
+  .debt-label.green { color: #166534; }
+
+  .history-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-type { font-weight: 600; margin-bottom: 2px; }
+  .history-date { font-size: 12px; color: var(--gray); }
+  .history-amount { font-weight: 700; }
+  .history-amount.positive { color: var(--danger); }
+  .history-amount.negative { color: var(--success); }
+
+  /* ── Pagination ── */
+  .pagination {
+    display: flex; justify-content: center; gap: 8px;
+    padding: 16px 0;
+  }
+  .page-btn {
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: #fff;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    color: var(--primary);
+  }
+  .page-btn:disabled { opacity: .4; cursor: default; }
+
+  /* ── Loading / Error ── */
+  .spinner {
+    display: flex; justify-content: center; padding: 40px;
+  }
+  .spinner-ring {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border); border-top-color: var(--primary);
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    text-align: center; padding: 40px 20px;
+    color: var(--danger);
+  }
+  .error-box .icon { font-size: 48px; margin-bottom: 12px; }
+  .error-box p { font-size: 15px; line-height: 1.6; }
+
+  .empty-box {
+    text-align: center; padding: 40px 20px; color: var(--gray);
+  }
+  .empty-box .icon { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-top">
+    <div class="user-info">
+      <h2 id="user-name">Yuklanmoqda...</h2>
+      <p id="user-phone"></p>
+    </div>
+    <div class="company-badge" id="company-name">GayratStroy</div>
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="switchTab('home')">🏠 Asosiy</button>
+    <button class="nav-btn" onclick="switchTab('sales')">📋 Xaridlar</button>
+    <button class="nav-btn" onclick="switchTab('debt')">💰 Qarz</button>
+    <button class="nav-btn" onclick="switchTab('profile')">👤 Profil</button>
+  </nav>
+</div>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div id="home-loading" class="spinner"><div class="spinner-ring"></div></div>
+  <div id="home-content" style="display:none">
+    <div class="stat-grid" style="margin-bottom:12px">
+      <div class="stat-box">
+        <div class="stat-label">Joriy qarz</div>
+        <div class="stat-value red" id="home-debt">0</div>
+        <div class="stat-sub">so'm</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Jami xaridlar</div>
+        <div class="stat-value blue" id="home-count">0</div>
+        <div class="stat-sub">marta</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Jami summa</div>
+        <div class="stat-value green" id="home-total">0</div>
+        <div class="stat-sub">so'm</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Avans balans</div>
+        <div class="stat-value blue" id="home-advance">0</div>
+        <div class="stat-sub">so'm</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Oxirgi xarid</div>
+      <div id="home-last-sale" style="color:var(--gray);font-size:14px">Yuklanmoqda...</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Holat</div>
+      <div id="home-status" style="font-size:14px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SALES PAGE -->
+<div class="page" id="page-sales">
+  <div id="sales-loading" class="spinner"><div class="spinner-ring"></div></div>
+  <div id="sales-content" style="display:none"></div>
+  <div class="pagination" id="sales-pagination" style="display:none">
+    <button class="page-btn" id="prev-btn" onclick="loadSales(currentSalesPage-1)" disabled>⬅️ Oldingi</button>
+    <span id="page-info" style="align-self:center;font-size:14px;color:var(--gray)"></span>
+    <button class="page-btn" id="next-btn" onclick="loadSales(currentSalesPage+1)">Keyingi ➡️</button>
+  </div>
+</div>
+
+<!-- DEBT PAGE -->
+<div class="page" id="page-debt">
+  <div id="debt-loading" class="spinner"><div class="spinner-ring"></div></div>
+  <div id="debt-content" style="display:none"></div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div class="page" id="page-profile">
+  <div id="profile-loading" class="spinner"><div class="spinner-ring"></div></div>
+  <div id="profile-content" style="display:none"></div>
+</div>
+
+<!-- Sale Detail Modal -->
+<div class="modal-overlay" id="sale-modal" onclick="closeModal(event)">
+  <div class="modal" id="modal-inner">
+    <div class="modal-handle"></div>
+    <div id="modal-loading" class="spinner"><div class="spinner-ring"></div></div>
+    <div id="modal-content" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ── Config ──
+const tg = window.Telegram?.WebApp;
+// API_BASE: nginx /api/ proxy orqali yuboriladi (same origin)
+const API_BASE = '/api/v1';
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.MainButton.hide();
+}
+
+let customerData = null;
+let currentSalesPage = 1;
+let totalSalesPages = 1;
+let activeTab = 'home';
+let loadedTabs = new Set();
+
+// ── Format helpers ──
+function fmt(n) {
+  return Number(n || 0).toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
+}
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+}
+
+// ── API helper ──
+async function apiGet(path, params = {}) {
+  const tgId = tg?.initDataUnsafe?.user?.id;
+  const qs = new URLSearchParams(params).toString();
+  const url = `${API_BASE}${path}${qs ? '?' + qs : ''}`;
+  const resp = await fetch(url, {
+    headers: { 'X-Telegram-Id': String(tgId || '') }
+  });
+  return resp.json();
+}
+
+// ── Tab switching ──
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`page-${tab}`).classList.add('active');
+  event.target.classList.add('active');
+
+  if (!loadedTabs.has(tab)) {
+    loadedTabs.add(tab);
+    if (tab === 'home') loadHome();
+    if (tab === 'sales') loadSales(1);
+    if (tab === 'debt') loadDebt();
+    if (tab === 'profile') loadProfile();
+  }
+}
+
+// ── HOME ──
+async function loadHome() {
+  try {
+    const result = await apiGet('/bot/my-profile');
+    document.getElementById('home-loading').style.display = 'none';
+    document.getElementById('home-content').style.display = 'block';
+
+    if (!result.success) {
+      document.getElementById('home-content').innerHTML =
+        '<div class="error-box"><div class="icon">🔒</div>' +
+        '<p>Siz tizimda topilmadingiz.<br>Botda /start bosing.</p></div>';
+      return;
+    }
+
+    customerData = result.data;
+    document.getElementById('user-name').textContent = customerData.name;
+    document.getElementById('user-phone').textContent = customerData.phone;
+
+    document.getElementById('home-debt').textContent = fmt(customerData.current_debt);
+    document.getElementById('home-count').textContent = customerData.total_purchases_count;
+    document.getElementById('home-total').textContent = fmt(customerData.total_purchases);
+    document.getElementById('home-advance').textContent = fmt(customerData.advance_balance);
+
+    // Oxirgi xarid
+    const lsEl = document.getElementById('home-last-sale');
+    if (customerData.last_purchase_date) {
+      lsEl.textContent = '📅 ' + fmtDate(customerData.last_purchase_date);
+    } else {
+      lsEl.textContent = 'Hali xarid qilinmagan';
+    }
+
+    // Holat
+    const statusEl = document.getElementById('home-status');
+    const debt = parseFloat(customerData.current_debt || 0);
+    const advance = parseFloat(customerData.advance_balance || 0);
+    let statusHtml = '';
+    if (debt > 0) {
+      statusHtml += `<div style="color:var(--danger);font-weight:700;margin-bottom:6px">🔴 Qarz: ${fmt(debt)} so'm</div>`;
+      statusHtml += `<div style="font-size:13px;color:#991b1b">Qarzni to'lash uchun do'konimizga murojaat qiling.</div>`;
+    } else {
+      statusHtml += `<div style="color:var(--success);font-weight:700">✅ Hech qanday qarzingiz yo'q!</div>`;
+    }
+    if (advance > 0) {
+      statusHtml += `<div style="color:var(--primary);margin-top:8px;font-weight:600">📥 Avans: ${fmt(advance)} so'm</div>`;
+    }
+    statusEl.innerHTML = statusHtml;
+
+    loadedTabs.add('home');
+  } catch (err) {
+    document.getElementById('home-loading').style.display = 'none';
+    document.getElementById('home-content').innerHTML =
+      '<div class="error-box"><div class="icon">⚠️</div><p>Xatolik yuz berdi. Qayta urinib ko\'ring.</p></div>';
+  }
+}
+
+// ── SALES ──
+async function loadSales(page = 1) {
+  currentSalesPage = page;
+  document.getElementById('sales-loading').style.display = 'flex';
+  document.getElementById('sales-content').style.display = 'none';
+  document.getElementById('sales-pagination').style.display = 'none';
+
+  try {
+    const result = await apiGet('/bot/my-sales', { page, per_page: 8 });
+    document.getElementById('sales-loading').style.display = 'none';
+
+    if (!result.success) {
+      document.getElementById('sales-content').style.display = 'block';
+      document.getElementById('sales-content').innerHTML =
+        '<div class="error-box"><div class="icon">🔒</div><p>Ma\'lumot olishda xatolik</p></div>';
+      return;
+    }
+
+    const sales = result.data || [];
+    totalSalesPages = result.total_pages || 1;
+
+    if (!sales.length) {
+      document.getElementById('sales-content').style.display = 'block';
+      document.getElementById('sales-content').innerHTML =
+        '<div class="empty-box"><div class="icon">🛒</div><p>Xaridlar yo\'q</p></div>';
+      return;
+    }
+
+    let html = '';
+    for (const sale of sales) {
+      const statusClass = { paid: 'paid', partial: 'partial', pending: 'unpaid' }[sale.payment_status] || 'unpaid';
+      const statusText = { paid: '✅ To\'liq', partial: '⚠️ Qisman', pending: '🔴 To\'lanmagan' }[sale.payment_status] || '🔴';
+
+      const products = (sale.items_preview || [])
+        .map(it => `${it.product_name} (${Math.round(it.quantity)} ${it.uom_symbol})`)
+        .join(', ');
+      const moreItems = sale.has_more_items ? ` +${sale.items_count - sale.items_preview.length} ta` : '';
+
+      html += `
+        <div class="sale-item" onclick="openSaleDetail(${sale.id})">
+          <div class="sale-top">
+            <div>
+              <div class="sale-num">#${sale.sale_number}</div>
+              <div class="sale-date">${fmtDate(sale.sale_date)}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="sale-amount">${fmt(sale.total_amount)} so'm</div>
+              <span class="badge ${statusClass}">${statusText}</span>
+            </div>
+          </div>
+          ${sale.debt_amount > 0 ? `<div style="color:var(--danger);font-size:13px;font-weight:600;margin-bottom:4px">🔴 Qarz: ${fmt(sale.debt_amount)} so'm</div>` : ''}
+          ${products ? `<div class="sale-products">📦 ${products}${moreItems}</div>` : ''}
+        </div>`;
+    }
+
+    document.getElementById('sales-content').innerHTML = html;
+    document.getElementById('sales-content').style.display = 'block';
+
+    // Pagination
+    if (totalSalesPages > 1) {
+      document.getElementById('sales-pagination').style.display = 'flex';
+      document.getElementById('prev-btn').disabled = page <= 1;
+      document.getElementById('next-btn').disabled = page >= totalSalesPages;
+      document.getElementById('page-info').textContent = `${page} / ${totalSalesPages}`;
+    }
+
+  } catch (err) {
+    document.getElementById('sales-loading').style.display = 'none';
+    document.getElementById('sales-content').style.display = 'block';
+    document.getElementById('sales-content').innerHTML =
+      '<div class="error-box"><div class="icon">⚠️</div><p>Server bilan bog\'lanishda xatolik</p></div>';
+  }
+}
+
+// ── SALE DETAIL MODAL ──
+async function openSaleDetail(saleId) {
+  document.getElementById('sale-modal').classList.add('open');
+  document.getElementById('modal-loading').style.display = 'flex';
+  document.getElementById('modal-content').style.display = 'none';
+
+  try {
+    const result = await apiGet(`/bot/my-sales/${saleId}`);
+    document.getElementById('modal-loading').style.display = 'none';
+
+    if (!result.success) {
+      document.getElementById('modal-content').innerHTML = '<p style="color:var(--danger)">Xatolik yuz berdi</p>';
+      document.getElementById('modal-content').style.display = 'block';
+      return;
+    }
+
+    const s = result.data;
+    const statusClass = { paid: 'paid', partial: 'partial', pending: 'unpaid' }[s.payment_status] || 'unpaid';
+
+    let productsHtml = s.items.map(it => `
+      <div class="product-row">
+        <div class="product-name">${it.product_name}</div>
+        <div class="product-meta">
+          <span>${Math.round(it.quantity)} ${it.uom_symbol} × ${fmt(it.unit_price)} so'm</span>
+          <span style="font-weight:700">${fmt(it.total_price)} so'm</span>
+        </div>
+        ${it.discount_amount > 0 ? `<div style="font-size:12px;color:var(--success)">🏷️ Chegirma: -${fmt(it.discount_amount)} so'm</div>` : ''}
+      </div>`).join('');
+
+    let paymentsHtml = '';
+    if (s.payments && s.payments.length > 0) {
+      paymentsHtml = `
+        <div class="card-title" style="margin-top:16px;margin-bottom:8px">To'lovlar tarixi</div>
+        ${s.payments.map(p => `
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">${p.payment_type}</div>
+              <div style="font-size:12px;color:var(--gray)">${fmtDate(p.date)}</div>
+            </div>
+            <div class="detail-value" style="color:var(--success)">+${fmt(p.amount)} so'm</div>
+          </div>`).join('')}`;
+    }
+
+    document.getElementById('modal-content').innerHTML = `
+      <div class="modal-title">🧾 #${s.sale_number}</div>
+      <div class="detail-row">
+        <span class="detail-label">Sana</span>
+        <span class="detail-value">${fmtDate(s.sale_date)}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Holat</span>
+        <span class="badge ${statusClass}">${s.status_text}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Jami</span>
+        <span class="detail-value">${fmt(s.total_amount)} so'm</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">To'langan</span>
+        <span class="detail-value" style="color:var(--success)">${fmt(s.paid_amount)} so'm</span>
+      </div>
+      ${s.debt_amount > 0 ? `
+      <div class="detail-row">
+        <span class="detail-label">Qarz</span>
+        <span class="detail-value" style="color:var(--danger)">${fmt(s.debt_amount)} so'm</span>
+      </div>` : ''}
+      ${s.discount_amount > 0 ? `
+      <div class="detail-row">
+        <span class="detail-label">Chegirma</span>
+        <span class="detail-value" style="color:var(--success)">-${fmt(s.discount_amount)} so'm</span>
+      </div>` : ''}
+      ${s.operator_name ? `
+      <div class="detail-row">
+        <span class="detail-label">Kassir</span>
+        <span class="detail-value">${s.operator_name}</span>
+      </div>` : ''}
+
+      <div class="card-title" style="margin-top:16px;margin-bottom:8px">Mahsulotlar (${s.items.length} ta)</div>
+      ${productsHtml}
+      ${paymentsHtml}
+      <button class="close-btn" onclick="document.getElementById('sale-modal').classList.remove('open')">
+        Yopish
+      </button>`;
+
+    document.getElementById('modal-content').style.display = 'block';
+  } catch (err) {
+    document.getElementById('modal-loading').style.display = 'none';
+    document.getElementById('modal-content').innerHTML =
+      '<p style="color:var(--danger);text-align:center">Xatolik yuz berdi</p>';
+    document.getElementById('modal-content').style.display = 'block';
+  }
+}
+
+function closeModal(e) {
+  if (e.target.id === 'sale-modal') {
+    document.getElementById('sale-modal').classList.remove('open');
+  }
+}
+
+// ── DEBT ──
+async function loadDebt() {
+  try {
+    const result = await apiGet('/bot/my-debt');
+    document.getElementById('debt-loading').style.display = 'none';
+    document.getElementById('debt-content').style.display = 'block';
+
+    if (!result.success) {
+      document.getElementById('debt-content').innerHTML =
+        '<div class="error-box"><div class="icon">⚠️</div><p>Ma\'lumot olishda xatolik</p></div>';
+      return;
+    }
+
+    const d = result.data;
+    const debt = parseFloat(d.current_debt || 0);
+    const advance = parseFloat(d.advance_balance || 0);
+
+    let html = '';
+
+    // Qarz banner
+    if (debt > 0) {
+      html += `
+        <div class="debt-banner has-debt">
+          <div class="debt-amount red">${fmt(debt)} so'm</div>
+          <div class="debt-label red">Joriy qarzingiz</div>
+        </div>`;
+    } else {
+      html += `
+        <div class="debt-banner no-debt">
+          <div class="debt-amount green">✅ Qarz yo'q</div>
+          <div class="debt-label green">Barcha to'lovlar amalga oshirilgan!</div>
+        </div>`;
+    }
+
+    if (advance > 0) {
+      html += `
+        <div class="card" style="background:var(--primary-light)">
+          <div style="font-size:13px;color:var(--primary)">Avans balansingiz</div>
+          <div style="font-size:22px;font-weight:800;color:var(--primary)">${fmt(advance)} so'm</div>
+        </div>`;
+    }
+
+    // Qarz bo'lgan sotuvlar
+    if (d.debt_sales && d.debt_sales.length > 0) {
+      html += `
+        <div class="card">
+          <div class="card-title">Qarz bo'lgan xaridlar (${d.debt_sales_count} ta)</div>`;
+      for (const sale of d.debt_sales) {
+        html += `
+          <div class="detail-row" style="cursor:pointer" onclick="switchTabAndOpenSale('sales', ${sale.id})">
+            <div>
+              <div style="font-weight:600">#${sale.sale_number}</div>
+              <div style="font-size:12px;color:var(--gray)">${fmtDate(sale.sale_date)}</div>
+            </div>
+            <div style="color:var(--danger);font-weight:700">${fmt(sale.debt_amount)} so'm</div>
+          </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Harakatlar tarixi
+    if (d.history && d.history.length > 0) {
+      html += `
+        <div class="card">
+          <div class="card-title">Harakatlar tarixi</div>`;
+      for (const rec of d.history) {
+        const isSale = rec.transaction_type?.toUpperCase() === 'SALE';
+        const amount = Math.abs(parseFloat(rec.amount || 0));
+        html += `
+          <div class="history-item">
+            <div>
+              <div class="history-type">${rec.type_text || rec.transaction_type}</div>
+              <div class="history-date">${fmtDate(rec.date)}</div>
+            </div>
+            <div>
+              <div class="history-amount ${isSale ? 'positive' : 'negative'}">
+                ${isSale ? '+' : '-'}${fmt(amount)} so'm
+              </div>
+              <div style="font-size:11px;color:var(--gray);text-align:right">
+                Qoldiq: ${fmt(rec.balance_after)} so'm
+              </div>
+            </div>
+          </div>`;
+      }
+      html += `</div>`;
+    }
+
+    document.getElementById('debt-content').innerHTML = html;
+  } catch (err) {
+    document.getElementById('debt-loading').style.display = 'none';
+    document.getElementById('debt-content').innerHTML =
+      '<div class="error-box"><div class="icon">⚠️</div><p>Xatolik yuz berdi</p></div>';
+  }
+}
+
+function switchTabAndOpenSale(tab, saleId) {
+  // Sotuvlar tabiga o'tib, detail ochish
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-sales').classList.add('active');
+  document.querySelectorAll('.nav-btn')[1].classList.add('active');
+  activeTab = 'sales';
+  if (!loadedTabs.has('sales')) { loadedTabs.add('sales'); loadSales(1); }
+  setTimeout(() => openSaleDetail(saleId), 300);
+}
+
+// ── PROFILE ──
+async function loadProfile() {
+  try {
+    const result = await apiGet('/bot/my-profile');
+    document.getElementById('profile-loading').style.display = 'none';
+    document.getElementById('profile-content').style.display = 'block';
+
+    if (!result.success) {
+      document.getElementById('profile-content').innerHTML =
+        '<div class="error-box"><div class="icon">🔒</div><p>Ma\'lumot olishda xatolik</p></div>';
+      return;
+    }
+
+    const c = result.data;
+    const typeLabels = {
+      regular: '👤 Oddiy mijoz', vip: '⭐ VIP mijoz',
+      wholesale: '🏭 Ulgurji', contractor: '🏗️ Pudratchi'
+    };
+
+    let html = `
+      <div class="card">
+        <div class="card-title">Shaxsiy ma'lumotlar</div>
+        <div class="detail-row">
+          <span class="detail-label">Ism</span>
+          <span class="detail-value">${c.name}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Telefon</span>
+          <span class="detail-value">${c.phone}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Mijoz turi</span>
+          <span class="detail-value">${typeLabels[c.customer_type] || c.customer_type}</span>
+        </div>
+        ${c.personal_discount_percent > 0 ? `
+        <div class="detail-row">
+          <span class="detail-label">Shaxsiy chegirma</span>
+          <span class="detail-value" style="color:var(--success)">${c.personal_discount_percent}%</span>
+        </div>` : ''}
+      </div>
+
+      <div class="card">
+        <div class="card-title">Statistika</div>
+        <div class="detail-row">
+          <span class="detail-label">Jami xaridlar</span>
+          <span class="detail-value">${c.total_purchases_count} marta</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Jami summa</span>
+          <span class="detail-value">${fmt(c.total_purchases)} so'm</span>
+        </div>
+        ${c.last_purchase_date ? `
+        <div class="detail-row">
+          <span class="detail-label">Oxirgi xarid</span>
+          <span class="detail-value">${fmtDate(c.last_purchase_date)}</span>
+        </div>` : ''}
+      </div>
+
+      <div class="card">
+        <div class="card-title">Moliyaviy holat</div>
+        <div class="detail-row">
+          <span class="detail-label">Joriy qarz</span>
+          <span class="detail-value" style="color:${c.current_debt > 0 ? 'var(--danger)' : 'var(--success)'}">
+            ${c.current_debt > 0 ? fmt(c.current_debt) + ' so\'m' : '✅ Yo\'q'}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Avans balans</span>
+          <span class="detail-value" style="color:var(--primary)">${fmt(c.advance_balance)} so'm</span>
+        </div>
+      </div>`;
+
+    document.getElementById('profile-content').innerHTML = html;
+  } catch (err) {
+    document.getElementById('profile-loading').style.display = 'none';
+    document.getElementById('profile-content').innerHTML =
+      '<div class="error-box"><div class="icon">⚠️</div><p>Xatolik yuz berdi</p></div>';
+  }
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  loadedTabs.add('home');
+  loadHome();
+});
+</script>
+</body>
+</html>

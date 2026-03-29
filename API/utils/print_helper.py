@@ -11,7 +11,7 @@ def queue_receipt_for_printing(
         db: Session,
         sale,
         user_id: int,
-        company_name: str = "METALL BAZA",
+        company_name: str = "G'AYRAT STROY HOUSE",
         company_phones: list = None
 ) -> Optional[int]:
     """

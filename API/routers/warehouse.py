@@ -264,9 +264,30 @@ async def stock_income(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Record stock income (purchase/arrival)."""
+    """
+    Omborga tovar kirim qilish.
+    Ta'minotchi tanlansa - qarz/to'lov avtomatik yoziladi.
+    """
+    from decimal import Decimal as D
+    from database.models.supplier import Supplier, SupplierTransaction, SupplierTransactionType
+    import datetime
+
     service = StockService(db)
 
+    # ── 1. Jami summani oldindan hisoblash ──────────────────────────────────
+    total_amount = D("0")
+    for item in data.items:
+        total_amount += D(str(item.quantity)) * D(str(item.unit_price))
+
+    # ── 2. Ta'minotchi tekshiruvi ────────────────────────────────────────────
+    supplier = None
+    if data.supplier_id:
+        supplier = db.query(Supplier).filter(
+            Supplier.id == data.supplier_id,
+            Supplier.is_deleted == False
+        ).first()
+
+    # ── 3. Har bir item uchun add_stock (commit qilmasdan) ───────────────────
     results = []
     for item in data.items:
         stock, movement = service.add_stock(
@@ -282,19 +303,83 @@ async def stock_income(
             created_by_id=current_user.id,
             unit_price_usd=item.unit_price_usd,
             exchange_rate=item.exchange_rate or data.exchange_rate,
-            supplier_name=data.supplier_name
+            supplier_name=supplier.name if supplier else data.supplier_name,
+            supplier_id=data.supplier_id if supplier else None,
+            do_commit=False,  # commit ni oxirda bir marta qilamiz
         )
         results.append({
             "product_id": item.product_id,
-            "new_quantity": stock.quantity,
+            "new_quantity": float(stock.quantity),
             "movement_id": movement.id
         })
+
+    # ── 4. Ta'minotchi qarz/to'lov tranzaksiyalari ──────────────────────────
+    paid = D(str(data.paid_amount or 0))
+    debt = max(D("0"), total_amount - paid)
+    supplier_tx_id = None
+    tx_date = data.document_date or datetime.date.today()
+
+    if supplier and total_amount > 0:
+        doc_ref = data.document_number or "hujjatsiz"
+
+        # QARZ tranzaksiyasi
+        if debt > 0:
+            debt_comment = (
+                data.payment_comment or
+                f"Kirim #{doc_ref}: jami {int(total_amount):,} so'm, "
+                f"to'landi {int(paid):,}, qarz {int(debt):,}"
+            )
+            debt_tx = SupplierTransaction(
+                supplier_id=supplier.id,
+                transaction_type=SupplierTransactionType.DEBT,
+                amount=debt,
+                currency="uzs",
+                amount_uzs=debt,
+                transaction_date=tx_date,
+                comment=debt_comment,
+                created_by_id=current_user.id,
+            )
+            db.add(debt_tx)
+            db.flush()  # ID olish uchun
+            supplier.current_debt = (supplier.current_debt or D("0")) + debt
+            supplier_tx_id = debt_tx.id
+
+        # TO'LOV tranzaksiyasi
+        if paid > 0:
+            pay_comment = (
+                data.payment_comment or
+                f"Kirim #{doc_ref}: kirim vaqtidagi to'lov {int(paid):,} so'm"
+            )
+            pay_tx = SupplierTransaction(
+                supplier_id=supplier.id,
+                transaction_type=SupplierTransactionType.PAYMENT,
+                amount=paid,
+                currency="uzs",
+                amount_uzs=paid,
+                transaction_date=tx_date,
+                comment=pay_comment,
+                created_by_id=current_user.id,
+            )
+            db.add(pay_tx)
+            # To'lov qarzni kamaytirmaydi — qarz alohida yozildi
+
+    # ── 5. Hammasi bir commit ─────────────────────────────────────────────────
+    db.commit()
 
     return {
         "success": True,
         "message": f"{len(results)} ta tovar kirim qilindi",
-        "data": results
+        "data": {
+            "movements": results,
+            "total_amount": float(total_amount),
+            "paid_amount": float(paid),
+            "debt_amount": float(debt),
+            "supplier_id": data.supplier_id,
+            "supplier_name": supplier.name if supplier else data.supplier_name,
+            "supplier_transaction_id": supplier_tx_id,
+        }
     }
+
 
 
 @router.post(

@@ -113,25 +113,6 @@ class CashTransaction(BaseModel):
     )
 
 
-class ExpenseCategory(BaseModel):
-    """
-    Expense categories for tracking.
-    """
-    
-    __tablename__ = 'expense_categories'
-    
-    name = Column(String(100), nullable=False, unique=True)
-    description = Column(Text, nullable=True)
-    parent_id = Column(Integer, ForeignKey('expense_categories.id'), nullable=True)
-    is_active = Column(Boolean, default=True)
-    
-    # Relationships
-    parent = relationship("ExpenseCategory", remote_side="ExpenseCategory.id", backref="children")
-    
-    __table_args__ = (
-        Index('ix_expense_categories_parent_id', 'parent_id'),
-    )
-
 
 class CashShift(BaseModel):
     """

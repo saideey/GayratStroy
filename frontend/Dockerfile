@@ -40,6 +40,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Copy Telegram WebApp (mijoz shaxsiy kabineti)
+COPY ../telegram_bot/webapp /usr/share/nginx/html/webapp
+
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

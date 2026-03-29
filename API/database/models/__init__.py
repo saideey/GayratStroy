@@ -65,6 +65,8 @@ from .supplier import (
     PurchaseOrderItem,
     SupplierPayment,
     SupplierPriceList,
+    SupplierTransactionType,
+    SupplierTransaction,
 )
 
 # Finance
@@ -72,7 +74,6 @@ from .finance import (
     CashRegister,
     TransactionType,
     CashTransaction,
-    ExpenseCategory,
     CashShift,
     BankAccount,
     BankTransaction,
@@ -90,6 +91,15 @@ from .settings import (
     ScheduledTask,
     FileAttachment,
     ReportExport,
+)
+
+# Expenses
+from .expense import (
+    ExpenseCategory,
+    ExpenseCurrencyType,
+    ExpenseEditAction,
+    Expense,
+    ExpenseEditLog,
 )
 
 # Printers
@@ -155,12 +165,13 @@ __all__ = [
     'PurchaseOrderItem',
     'SupplierPayment',
     'SupplierPriceList',
+    'SupplierTransactionType',
+    'SupplierTransaction',
 
     # Finance
     'CashRegister',
     'TransactionType',
     'CashTransaction',
-    'ExpenseCategory',
     'CashShift',
     'BankAccount',
     'BankTransaction',
@@ -176,6 +187,13 @@ __all__ = [
     'ScheduledTask',
     'FileAttachment',
     'ReportExport',
+
+    # Expenses
+    'ExpenseCategory',
+    'ExpenseCurrencyType',
+    'ExpenseEditAction',
+    'Expense',
+    'ExpenseEditLog',
 
     # Printers
     'Printer',

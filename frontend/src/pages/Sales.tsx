@@ -46,6 +46,7 @@ interface SaleDetail {
   customer_id: number | null
   customer_name: string | null
   customer_phone: string | null
+  contact_phone: string | null
   seller_id: number
   seller_name: string
   warehouse_id: number
@@ -395,6 +396,15 @@ export default function SalesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <p className="font-medium">{sale.customer_name || t('unknownCustomer')}</p>
+                        {(sale.customer_phone || sale.contact_phone) && (
+                          <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3" />
+                            {sale.customer_phone || sale.contact_phone}
+                            {!sale.customer_phone && sale.contact_phone && (
+                              <span className="ml-1 text-orange-500 text-xs">(mehmon)</span>
+                            )}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary">
                         {sale.seller_name}
@@ -507,10 +517,13 @@ export default function SalesPage() {
                 <div className="space-y-1">
                   <p className="text-sm text-text-secondary">{t('customer')}</p>
                   <p className="font-medium">{viewingSale.customer_name || t('unknownCustomer')}</p>
-                  {viewingSale.customer_phone && (
+                  {(viewingSale.customer_phone || viewingSale.contact_phone) && (
                     <p className="text-sm text-text-secondary flex items-center gap-1">
                       <Phone className="w-3 h-3" />
-                      {viewingSale.customer_phone}
+                      {viewingSale.customer_phone || viewingSale.contact_phone}
+                      {!viewingSale.customer_phone && viewingSale.contact_phone && (
+                        <span className="ml-1 text-xs text-orange-500">(mehmon)</span>
+                      )}
                     </p>
                   )}
                 </div>

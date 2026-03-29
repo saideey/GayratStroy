@@ -12,15 +12,27 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '001_initial'
+revision: str = 'rev_001'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Create all tables."""
-    
+    """Create all tables - safe version with IF NOT EXISTS check."""
+    from sqlalchemy import text
+
+    conn = op.get_bind()
+
+    # Agar jadvallar allaqachon mavjud bo'lsa — o'tkazib yuborish
+    roles_exists = conn.execute(text(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='roles'"
+    )).scalar()
+
+    if roles_exists:
+        print("⚠️  Tables already exist, skipping 001_initial creation.")
+        return
+
     # ========================================
     # ROLES TABLE
     # ========================================

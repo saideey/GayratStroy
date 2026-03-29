@@ -10,13 +10,18 @@ import sqlalchemy as sa
 
 
 # revision identifiers
-revision = '005_add_edit_tracking'
-down_revision = '004_add_telegram_id'
+revision = 'rev_005'
+down_revision = 'rev_004'
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
+    from sqlalchemy import text
+    conn = op.get_bind()
+    exists = conn.execute(text("SELECT COUNT(*) FROM information_schema.columns WHERE table_name='stock_movements' AND column_name='is_deleted'")).scalar()
+    if exists:
+        return
     # StockMovement - edit/delete tracking
     op.add_column('stock_movements', sa.Column('updated_by_id', sa.Integer(), nullable=True))
     op.add_column('stock_movements', sa.Column('is_deleted', sa.Boolean(), server_default='false', nullable=False))

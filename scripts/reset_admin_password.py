@@ -31,7 +31,7 @@ def reset_admin_password(new_password: str):
     # Database connection settings (from .env)
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '5432')
-    db_name = os.getenv('DB_NAME', 'metall_basa')
+    db_name = os.getenv('DB_NAME', 'gayratstroy_db')
     db_user = os.getenv('DB_USER', 'postgres')
     db_password = os.getenv('DB_PASSWORD', 'postgres')
     
@@ -83,7 +83,7 @@ def list_all_users():
     
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '5432')
-    db_name = os.getenv('DB_NAME', 'metall_basa')
+    db_name = os.getenv('DB_NAME', 'gayratstroy_db')
     db_user = os.getenv('DB_USER', 'postgres')
     db_password = os.getenv('DB_PASSWORD', 'postgres')
     
@@ -130,7 +130,7 @@ def reset_user_password(username: str, new_password: str):
     
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '5432')
-    db_name = os.getenv('DB_NAME', 'metall_basa')
+    db_name = os.getenv('DB_NAME', 'gayratstroy_db')
     db_user = os.getenv('DB_USER', 'postgres')
     db_password = os.getenv('DB_PASSWORD', 'postgres')
     

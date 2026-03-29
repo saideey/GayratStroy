@@ -23,6 +23,10 @@ class Config:
     
     # API URL (for fetching additional data if needed)
     API_URL = os.getenv("API_URL", "http://api:8000/api/v1")
+
+    # Telegram WebApp URL (HTTPS bo'lishi shart!)
+    # Masalan: https://yourdomain.com/webapp
+    WEBAPP_URL = os.getenv("WEBAPP_URL", "")
     
     # Company info for messages
     COMPANY_NAME = os.getenv("COMPANY_NAME", "G'ayrat stroy house")

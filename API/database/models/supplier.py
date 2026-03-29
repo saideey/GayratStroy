@@ -267,3 +267,66 @@ class SupplierPriceList(BaseModel):
         Index('ix_supplier_prices_product_id', 'product_id'),
         CheckConstraint('price >= 0', name='ck_supplier_price_non_negative'),
     )
+
+
+class SupplierTransactionType(PyEnum):
+    """Ta'minotchi tranzaksiya turlari."""
+    DEBT = "debt"          # Qarz (biz ularga qarz bo'ldik)
+    PAYMENT = "payment"    # To'lov (biz to'ladik)
+    RETURN = "return"      # Qaytarish (mahsulot qaytarildi)
+
+
+class SupplierTransaction(BaseModel, SoftDeleteMixin):
+    """
+    Ta'minotchi bilan hisob-kitob tarixi.
+    Har bir qarz yoki to'lov bu yerda saqlanadi.
+    Comment MAJBURIY — har bir o'zgarishda izoh yoziladi.
+    """
+
+    __tablename__ = 'supplier_transactions'
+
+    # Kim bilan
+    supplier_id = Column(Integer, ForeignKey('suppliers.id'), nullable=False)
+
+    # Tranzaksiya turi
+    transaction_type = Column(
+        Enum(SupplierTransactionType), nullable=False
+    )
+
+    # Summa
+    amount = Column(Numeric(20, 2), nullable=False)
+    currency = Column(String(5), nullable=False, default='uzs')  # uzs / usd
+    usd_rate = Column(Numeric(12, 2), nullable=True)
+    amount_uzs = Column(Numeric(20, 2), nullable=True)           # UZS ekvivalent
+
+    # Sana
+    transaction_date = Column(Date, nullable=False)
+
+    # Izoh — MAJBURIY
+    comment = Column(Text, nullable=False)
+
+    # Bog'liq hujjat (ixtiyoriy)
+    purchase_order_id = Column(
+        Integer, ForeignKey('purchase_orders.id'), nullable=True
+    )
+
+    # Soft delete uchun
+    deleted_by_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    delete_comment = Column(Text, nullable=True)
+
+    # Kim yaratdi / o'zgartirdi
+    created_by_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+
+    # Relationships
+    supplier = relationship("Supplier", foreign_keys=[supplier_id])
+    purchase_order = relationship("PurchaseOrder", foreign_keys=[purchase_order_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    deleted_by = relationship("User", foreign_keys=[deleted_by_id])
+
+    __table_args__ = (
+        Index('ix_supplier_transactions_supplier_id', 'supplier_id'),
+        Index('ix_supplier_transactions_type', 'transaction_type'),
+        Index('ix_supplier_transactions_date', 'transaction_date'),
+        Index('ix_supplier_transactions_is_deleted', 'is_deleted'),
+    )
+

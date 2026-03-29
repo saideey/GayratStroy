@@ -76,6 +76,8 @@ type TranslationKeys = {
   reports: string
   settings: string
   users: string
+  expenses: string
+  suppliers: string
   
   // Dashboard
   todaySales: string
@@ -648,6 +650,8 @@ export const translations: Record<LanguageCode, TranslationKeys> = {
     reports: 'Hisobotlar',
     settings: 'Sozlamalar',
     users: 'Foydalanuvchilar',
+    expenses: 'Chiqimlar',
+    suppliers: "Ta'minotchilar",
 
     // Dashboard
     todaySales: 'Bugungi savdo',
@@ -1219,6 +1223,8 @@ export const translations: Record<LanguageCode, TranslationKeys> = {
     reports: 'Отчеты',
     settings: 'Настройки',
     users: 'Пользователи',
+    expenses: 'Расходы',
+    suppliers: 'Поставщики',
 
     // Dashboard
     todaySales: 'Продажи за сегодня',
@@ -1790,6 +1796,7 @@ export const translations: Record<LanguageCode, TranslationKeys> = {
     reports: 'Ҳисоботлар',
     settings: 'Созламалар',
     users: 'Фойдаланувчилар',
+    expenses: 'Чиқимлар',
 
     // Dashboard
     todaySales: 'Бугунги савдо',

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Search, Trash2, User, ShoppingCart, CreditCard,
   Banknote, Building, Check, AlertCircle, Edit3,
-  Loader2, Ruler, Star, Grid3X3, X, ChevronUp, GripVertical, Plus, Minus, Phone, Printer, ArrowLeft, Bookmark, Clock, FolderOpen
+  Loader2, Ruler, Star, Grid3X3, X, ChevronUp, GripVertical, Plus, Minus, Phone, Printer, ArrowLeft, Bookmark, Clock, FolderOpen, Calculator
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
@@ -122,6 +122,8 @@ export default function POSPage() {
     unitPrice: number
     costPrice: number
     quantity: number
+    priceCalcMode: boolean   // true = summaga hisoblash
+    targetAmount: number     // foydalanuvchi kiritgan summa
   }>({
     product: null,
     selectedUomId: 0,
@@ -130,12 +132,19 @@ export default function POSPage() {
     conversionFactor: 1,
     unitPrice: 0,
     costPrice: 0,
-    quantity: 1
+    quantity: 1,
+    priceCalcMode: false,
+    targetAmount: 0,
   })
   
   // NEW: Customer search
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
   const [customerSellerFilter, setCustomerSellerFilter] = useState<number | ''>('')
+
+  // NEW: Quick customer create
+  const [showQuickCreateCustomer, setShowQuickCreateCustomer] = useState(false)
+  const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '', debt: '' })
+  const [quickCustomerLoading, setQuickCustomerLoading] = useState(false)
   
   // NEW: Driver phone for receipt
   const [driverPhone, setDriverPhone] = useState('')
@@ -387,7 +396,9 @@ export default function POSPage() {
       conversionFactor: 1,
       unitPrice: salePrice,
       costPrice: costPrice,
-      quantity: 1
+      quantity: 1,
+      priceCalcMode: false,
+      targetAmount: 0,
     })
     setShowAddProductDialog(true)
   }
@@ -513,7 +524,9 @@ export default function POSPage() {
       conversionFactor: 1,
       unitPrice: 0,
       costPrice: 0,
-      quantity: 1
+      quantity: 1,
+      priceCalcMode: false,
+      targetAmount: 0,
     })
     toast.success(t('added'))
   }
@@ -554,7 +567,58 @@ export default function POSPage() {
     setDragOverCategoryId(null)
   }
 
-  // Filtered customers based on search and seller filter
+  // Quick customer create handler
+  const handleQuickCreateCustomer = async () => {
+    if (!quickCustomerForm.name.trim()) { toast.error('Ism kiritilishi shart'); return }
+    if (!quickCustomerForm.phone.trim()) { toast.error('Telefon raqam kiritilishi shart'); return }
+    setQuickCustomerLoading(true)
+    try {
+      // 1. Mijoz yaratish
+      const response = await api.post('/customers', {
+        name: quickCustomerForm.name.trim(),
+        phone: quickCustomerForm.phone.trim(),
+        customer_type: 'REGULAR',
+      })
+      const newCustomer = response.data?.data || response.data
+
+      // 2. Qarz kiritilgan bo'lsa — alohida qarz yozish
+      const debtAmount = parseFloat(quickCustomerForm.debt.replace(/\s/g, '')) || 0
+      if (debtAmount > 0 && newCustomer?.id) {
+        try {
+          await api.post(
+            `/customers/${newCustomer.id}/debt`,
+            null,
+            {
+              params: {
+                amount: debtAmount,
+                description: "Tezkor qo'shish paytidagi mavjud qarz",
+              }
+            }
+          )
+          newCustomer.current_debt = debtAmount
+        } catch (debtErr: any) {
+          toast.error('Mijoz qo\'shildi, lekin qarz yozishda xatolik')
+        }
+      }
+
+      setCustomer(newCustomer)
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      setShowQuickCreateCustomer(false)
+      setShowCustomerDialog(false)
+      setQuickCustomerForm({ name: '', phone: '', debt: '' })
+      setCustomerSearchQuery('')
+      toast.success(
+        debtAmount > 0
+          ? `${newCustomer.name} qo'shildi • Qarz: ${formatMoney(debtAmount)}`
+          : `${newCustomer.name} mijoz sifatida qo'shildi`
+      )
+    } catch (e: any) {
+      toast.error(e.response?.data?.detail || 'Mijoz yaratishda xatolik')
+    } finally {
+      setQuickCustomerLoading(false)
+    }
+  }
+
   const filteredCustomers = useMemo(() => {
     if (!customersData?.data) return []
 
@@ -878,9 +942,12 @@ export default function POSPage() {
           customer_id: customer?.id || null,
           warehouse_id: warehouseId,
           items: saleItems,
+          final_total: generalDiscount > 0 ? finalTotal : undefined,
           payment_type: paymentType,
           payment_amount: paymentType === 'DEBT' ? 0 : paymentInUZS,
           notes: generalDiscount > 0 ? `Umumiy chegirma: ${formatMoney(generalDiscount)}` : '',
+          // Mijoz tanlanmasa kiritilgan telefon raqami
+          contact_phone: (!customer && driverPhone.trim()) ? driverPhone.trim() : undefined,
         }
 
         const result = await salesService.quickSale(saleData)
@@ -1283,33 +1350,49 @@ export default function POSPage() {
 
         {/* Customer */}
         <div className="p-3 border-b">
-          <button
-            onClick={() => setShowCustomerDialog(true)}
-            className={cn(
-              "w-full h-10 flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors",
-              customer
-                ? "bg-blue-600 text-white"
-                : "border border-dashed border-gray-300 text-gray-600 hover:border-blue-500"
-            )}
-          >
-            <User className="w-4 h-4" />
-            {customer ? customer.name : t('selectCustomer')}
-          </button>
+          {/* Mijoz tanlash + tezkor qo'shish */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setShowCustomerDialog(true)}
+              className={cn(
+                "flex-1 h-10 flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors",
+                customer
+                  ? "bg-blue-600 text-white"
+                  : "border border-dashed border-gray-300 text-gray-600 hover:border-blue-500"
+              )}
+            >
+              <User className="w-4 h-4" />
+              {customer ? customer.name : t('selectCustomer')}
+            </button>
+            {/* Tezkor mijoz qo'shish + tugmasi */}
+            <button
+              onClick={() => {
+                setQuickCustomerForm({ name: '', phone: '', debt: '' })
+                setShowQuickCreateCustomer(true)
+              }}
+              title="Tezkor mijoz qo'shish"
+              className="h-10 w-10 flex items-center justify-center rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-green-500 hover:text-green-600 hover:bg-green-50 transition-colors flex-shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
 
           {customer && customer.current_debt > 0 && (
             <p className="text-xs text-red-600 text-center mt-1">{t('debt')}: {formatMoney(customer.current_debt)}</p>
           )}
 
-          {/* Driver Phone Input */}
-          <div className="mt-2">
-            <input
-              type="tel"
-              value={driverPhone}
-              onChange={(e) => setDriverPhone(e.target.value)}
-              placeholder={t('driverPhone')}
-              className="w-full h-9 px-3 text-sm border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-            />
-          </div>
+          {/* Telefon raqam — mijoz tanlanmasa */}
+          {!customer && (
+            <div className="mt-2">
+              <input
+                type="tel"
+                value={driverPhone}
+                onChange={(e) => setDriverPhone(e.target.value)}
+                placeholder="Mijoz telefon raqami (ixtiyoriy)"
+                className="w-full h-9 px-3 text-sm border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+              />
+            </div>
+          )}
         </div>
 
         {/* Saqlangan xaridlar */}
@@ -1887,7 +1970,9 @@ export default function POSPage() {
             conversionFactor: 1,
             unitPrice: 0,
             costPrice: 0,
-            quantity: 1
+            quantity: 1,
+            priceCalcMode: false,
+            targetAmount: 0,
           })
         }
       }}>
@@ -1967,13 +2052,104 @@ export default function POSPage() {
                 )}
               </div>
 
-              {/* Quantity Input */}
+              {/* Weight Calculator Toggle — faqat weight UOM da */}
+              {/* kg, g, t — weight tekshiruvi (type yoki symbol orqali) */}
+              {(addProductData.product?.base_uom_type === 'weight' ||
+                ['kg', 'g', 't', 'кг', 'гр', 'тн'].includes(addProductData.product?.base_uom_symbol?.toLowerCase() || '')) && (
+                <div className="w-full">
+                  <button
+                    type="button"
+                    onClick={() => setAddProductData(prev => ({
+                      ...prev,
+                      priceCalcMode: !prev.priceCalcMode,
+                      targetAmount: !prev.priceCalcMode ? prev.unitPrice * prev.quantity : 0,
+                    }))}
+                    className={cn(
+                      "w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all",
+                      addProductData.priceCalcMode
+                        ? "border-purple-500 bg-purple-50 text-purple-700"
+                        : "border-gray-200 text-gray-600 hover:border-purple-300"
+                    )}
+                  >
+                    <Calculator className="w-4 h-4" />
+                    {addProductData.priceCalcMode ? "Summaga hisoblash (yoqilgan)" : "Summaga hisoblash"}
+                  </button>
+                </div>
+              )}
+
+              {/* Summaga hisoblash kalkulyatori */}
+              {addProductData.priceCalcMode && (
+                addProductData.product?.base_uom_type === 'weight' ||
+                ['kg', 'g', 't', 'кг', 'гр', 'тн'].includes(addProductData.product?.base_uom_symbol?.toLowerCase() || '')
+              ) && (() => {
+                const pricePerKg = addProductData.unitPrice // 1 kg narxi
+                const targetAmt = addProductData.targetAmount
+                // Miqdor (kg da) = targetAmount / pricePerKg
+                const calcQtyKg = pricePerKg > 0 ? targetAmt / pricePerKg : 0
+                // Gramda
+                const calcQtyG = calcQtyKg * 1000
+                // Ko'rinadigan qiymat: 1000g dan kichik bo'lsa gramda, aks holda kg da
+                const displayQty = calcQtyKg >= 1
+                  ? `${calcQtyKg.toFixed(3)} kg`
+                  : `${Math.round(calcQtyG)} g`
+
+                return (
+                  <div className="w-full bg-purple-50 border border-purple-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calculator className="w-4 h-4 text-purple-600" />
+                      <span className="text-xs font-semibold text-purple-700">Summaga hisoblash</span>
+                      <span className="text-xs text-purple-500 ml-auto">1 {addProductData.selectedUomSymbol} = {formatMoney(pricePerKg)}</span>
+                    </div>
+
+                    {/* Summa kiritish */}
+                    <div>
+                      <label className="text-xs text-purple-600 mb-1 block">Mijoz bermoqchi bo'lgan summa (so'm)</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoFocus
+                        value={targetAmt === 0 ? '' : formatInputNumber(targetAmt)}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value.replace(/\s/g, '')) || 0
+                          // Gramda hisoblash
+                          const qtyKg = pricePerKg > 0 ? val / pricePerKg : 0
+                          setAddProductData(prev => ({
+                            ...prev,
+                            targetAmount: val,
+                            quantity: Math.round(qtyKg * 1000) / 1000 // 3 xona aniqlik
+                          }))
+                        }}
+                        placeholder="Masalan: 15000"
+                        className="w-full h-11 px-3 text-base font-bold text-center border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none bg-white"
+                      />
+                    </div>
+
+                    {/* Natija */}
+                    {targetAmt > 0 && pricePerKg > 0 && (
+                      <div className="bg-white rounded-lg border border-purple-200 px-3 py-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500">Miqdor:</span>
+                          <span className="text-lg font-bold text-purple-700">{displayQty}</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-gray-500">Narx:</span>
+                          <span className="text-sm font-semibold text-green-600">{formatMoney(targetAmt)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Quantity Input — priceCalcMode da ham ko'rinadi (natijani tahrirlash mumkin) */}
               <div className="w-full">
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">{t('quantityUnit')} ({addProductData.selectedUomSymbol})</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  {addProductData.priceCalcMode ? 'Hisoblangan miqdor' : t('quantityUnit')} ({addProductData.selectedUomSymbol})
+                </label>
                 <div className="flex items-center gap-2 w-full">
                   <button
                     type="button"
-                    onClick={() => setAddProductData(prev => ({ ...prev, quantity: Math.max(0.5, prev.quantity - 1) }))}
+                    onClick={() => setAddProductData(prev => ({ ...prev, quantity: Math.max(0.001, prev.quantity - (prev.product?.base_uom_type === 'weight' ? 0.1 : 1)) }))}
                     className="w-11 h-11 flex-shrink-0 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center active:scale-95 transition-transform"
                   >
                     <Minus className="w-5 h-5" />
@@ -1984,30 +2160,35 @@ export default function POSPage() {
                     value={addProductData.quantity === 0 ? '' : addProductData.quantity}
                     onChange={(e) => {
                       const value = e.target.value
-                      // Allow empty input
                       if (value === '' || value === '0') {
-                        setAddProductData(prev => ({ ...prev, quantity: 0 }))
+                        setAddProductData(prev => ({ ...prev, quantity: 0, targetAmount: 0 }))
                         return
                       }
-                      // Parse and set number
                       const num = parseFloat(value)
                       if (!isNaN(num) && num >= 0) {
-                        setAddProductData(prev => ({ ...prev, quantity: num }))
+                        setAddProductData(prev => ({
+                          ...prev,
+                          quantity: num,
+                          // priceCalcMode da miqdor qo'lda o'zgartirilsa — summa ham yangilanadi
+                          targetAmount: prev.priceCalcMode ? Math.round(num * prev.unitPrice) : prev.targetAmount,
+                        }))
                       }
                     }}
                     onFocus={(e) => e.target.select()}
                     onBlur={(e) => {
-                      // Set minimum value on blur if empty or zero
                       if (!e.target.value || parseFloat(e.target.value) <= 0) {
-                        setAddProductData(prev => ({ ...prev, quantity: 1 }))
+                        setAddProductData(prev => ({ ...prev, quantity: addProductData.product?.base_uom_type === 'weight' ? 0.1 : 1 }))
                       }
                     }}
-                    className="flex-1 min-w-0 h-11 px-3 text-center text-lg font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 outline-none box-border"
-                    placeholder="1"
+                    className={cn(
+                      "flex-1 min-w-0 h-11 px-3 text-center text-lg font-bold border-2 rounded-lg focus:border-blue-500 outline-none box-border",
+                      addProductData.priceCalcMode ? "border-purple-300 bg-purple-50" : "border-gray-200"
+                    )}
+                    placeholder={addProductData.product?.base_uom_type === 'weight' ? '0.5' : '1'}
                   />
                   <button
                     type="button"
-                    onClick={() => setAddProductData(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                    onClick={() => setAddProductData(prev => ({ ...prev, quantity: prev.quantity + (prev.product?.base_uom_type === 'weight' ? 0.1 : 1) }))}
                     className="w-11 h-11 flex-shrink-0 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center active:scale-95 transition-transform"
                   >
                     <Plus className="w-5 h-5" />
@@ -2126,7 +2307,14 @@ export default function POSPage() {
                 <input
                   type="text"
                   value={customerSearchQuery}
-                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setCustomerSearchQuery(val)
+                    const isPhone = /^[\d\s+\-()]{4,}$/.test(val.trim())
+                    if (isPhone && val.trim().length >= 4) {
+                      setQuickCustomerForm(prev => ({ ...prev, phone: val.trim() }))
+                    }
+                  }}
                   placeholder={t('searchProducts')}
                   className="w-full h-11 pl-11 pr-4 border-2 border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   autoFocus
@@ -2154,10 +2342,26 @@ export default function POSPage() {
             </button>
 
             {filteredCustomers.length === 0 ? (
-              <div className="text-center py-12">
-                <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">{t('notFound')}</p>
-                <p className="text-gray-400 text-sm mt-1">{t('search')}</p>
+              <div className="text-center py-8">
+                <User className="w-14 h-14 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 text-base font-medium">{t('notFound')}</p>
+                <p className="text-gray-400 text-sm mt-1 mb-5">Bu nomli yoki raqamli mijoz topilmadi</p>
+                <button
+                  onClick={() => {
+                    const isPhone = /^[\d\s+\-()]{4,}$/.test(customerSearchQuery.trim())
+                    setQuickCustomerForm({
+                      name: isPhone ? '' : customerSearchQuery.trim(),
+                      phone: isPhone ? customerSearchQuery.trim() : '',
+                      debt: '',
+                    })
+                    setShowCustomerDialog(false)
+                    setShowQuickCreateCustomer(true)
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors font-medium text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Yangi mijoz qo'shish
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2236,6 +2440,116 @@ export default function POSPage() {
               {t('cancel')}
             </button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Tezkor Mijoz Qo'shish Dialogi ─── */}
+      <Dialog open={showQuickCreateCustomer} onOpenChange={(open) => {
+        setShowQuickCreateCustomer(open)
+        if (!open) setQuickCustomerForm({ name: '', phone: '', debt: '' })
+      }}>
+        <DialogContent className="max-w-sm w-[95vw]">
+          <DialogHeader>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <Plus className="w-4 h-4 text-green-600" />
+              </div>
+              Tezkor mijoz qo'shish
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            {/* Ism */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Ism <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={quickCustomerForm.name}
+                onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Mijoz ismi"
+                className="w-full h-11 px-3 border-2 border-gray-200 rounded-xl text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleQuickCreateCustomer()}
+              />
+            </div>
+
+            {/* Telefon */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Telefon <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                value={quickCustomerForm.phone}
+                onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="+998 XX XXX XX XX"
+                className="w-full h-11 px-3 border-2 border-gray-200 rounded-xl text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+                onKeyDown={(e) => e.key === 'Enter' && handleQuickCreateCustomer()}
+              />
+            </div>
+
+            {/* Qarz (ixtiyoriy) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Mavjud qarzdorlik
+                <span className="ml-1 text-xs text-gray-400 font-normal">(ixtiyoriy)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={quickCustomerForm.debt}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\s/g, '')
+                    if (/^\d*$/.test(raw)) {
+                      setQuickCustomerForm(prev => ({
+                        ...prev,
+                        debt: raw ? formatInputNumber(raw) : ''
+                      }))
+                    }
+                  }}
+                  placeholder="0"
+                  className="w-full h-11 px-3 pr-14 border-2 border-gray-200 rounded-xl text-base focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-colors"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">
+                  so'm
+                </span>
+              </div>
+              {quickCustomerForm.debt && (
+                <p className="mt-1 text-xs text-orange-600">
+                  ⚠️ {formatMoney(parseFloat(quickCustomerForm.debt.replace(/\s/g, '')) || 0)} qarz
+                  mijoz hisobiga biriktiriladi
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 pt-2">
+            <button
+              onClick={() => {
+                setShowQuickCreateCustomer(false)
+                setQuickCustomerForm({ name: '', phone: '', debt: '' })
+              }}
+              className="flex-1 h-11 border-2 border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+              disabled={quickCustomerLoading}
+            >
+              Bekor qilish
+            </button>
+            <button
+              onClick={handleQuickCreateCustomer}
+              disabled={quickCustomerLoading || !quickCustomerForm.name.trim() || !quickCustomerForm.phone.trim()}
+              className="flex-1 h-11 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {quickCustomerLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              Qo'shish
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

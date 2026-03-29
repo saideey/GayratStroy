@@ -14,6 +14,8 @@ import WarehousePage from '@/pages/Warehouse'
 import ReportsPage from '@/pages/Reports'
 import SettingsPage from '@/pages/Settings'
 import UsersPage from '@/pages/Users'
+import ExpensesPage from '@/pages/Expenses'
+import SuppliersPage from '@/pages/Suppliers'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -56,6 +58,8 @@ function App() {
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/warehouse" element={<WarehousePage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/suppliers" element={<SuppliersPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/users" element={<UsersPage />} />
       </Route>

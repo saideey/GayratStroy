@@ -238,6 +238,7 @@ async def get_products(
             "base_uom_id": p.base_uom_id,
             "base_uom_symbol": p.base_uom.symbol if p.base_uom else "?",
             "base_uom_name": p.base_uom.name if p.base_uom else "?",
+            "base_uom_type": p.base_uom.uom_type if p.base_uom else "piece",
             "cost_price": p.cost_price,
             "cost_price_usd": cost_price_usd,
             "sale_price": p.sale_price,

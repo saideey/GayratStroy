@@ -84,6 +84,8 @@ async def get_sales(
         "customer_name": s.customer.name if s.customer else None,
         "seller_id": s.seller_id,
         "seller_name": f"{s.seller.first_name} {s.seller.last_name}",
+        "customer_phone": s.customer.phone if s.customer else None,
+        "contact_phone": getattr(s, 'contact_phone', None),
         "total_amount": s.total_amount,
         "paid_amount": s.paid_amount,
         "debt_amount": s.debt_amount,
@@ -228,6 +230,7 @@ async def get_sale(
             "cancelled_at": sale.cancelled_at,
             "cancelled_by": f"{sale.cancelled_by.first_name} {sale.cancelled_by.last_name}" if sale.cancelled_by else None,
             "notes": sale.notes,
+            "contact_phone": getattr(sale, 'contact_phone', None),
             "created_at": sale.created_at.isoformat(),
             "updated_at": sale.updated_at.isoformat() if sale.updated_at else None,
             "updated_by": f"{sale.updated_by.first_name} {sale.updated_by.last_name}" if sale.updated_by else None,
@@ -303,7 +306,7 @@ async def create_sale(
             db=db,
             sale=sale,  # Sale object with items loaded
             user_id=current_user.id,
-            company_name="METALL BAZA",  # Yoki settings dan oling
+            company_name="G'AYRAT STROY HOUSE",  # Yoki settings dan oling
             company_phones=company_phones
         )
 
@@ -365,6 +368,11 @@ async def quick_sale(
     
     if not sale:
         raise HTTPException(status_code=400, detail=message)
+
+    # Mijoz tanlanmasa lekin telefon kiritilgan bo'lsa — saqlash
+    if not data.customer_id and data.contact_phone and data.contact_phone.strip():
+        sale.contact_phone = data.contact_phone.strip()
+        db.commit()
     
     # Calculate change
     change = max(Decimal("0"), data.payment_amount - sale.total_amount)
