@@ -28,7 +28,7 @@ def upgrade() -> None:
     if table_exists('supplier_transactions'):
         return
 
-    # Enum type
+    # Enum type — xavfsiz yaratish
     conn = op.get_bind()
     conn.execute(text(
         "DO $$ BEGIN "
@@ -37,40 +37,32 @@ def upgrade() -> None:
         "END $$;"
     ))
 
-    op.create_table(
-        'supplier_transactions',
-        sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column('supplier_id', sa.Integer(), nullable=False),
-        sa.Column('transaction_type',
-            sa.Enum('debt', 'payment', 'return',
-                    name='suppliertransactiontype', create_type=False),
-            nullable=False
-        ),
-        sa.Column('amount', sa.Numeric(20, 2), nullable=False),
-        sa.Column('currency', sa.String(5), nullable=False, server_default='uzs'),
-        sa.Column('usd_rate', sa.Numeric(12, 2), nullable=True),
-        sa.Column('amount_uzs', sa.Numeric(20, 2), nullable=True),
-        sa.Column('transaction_date', sa.Date(), nullable=False),
-        sa.Column('comment', sa.Text(), nullable=False),
-        sa.Column('purchase_order_id', sa.Integer(), nullable=True),
-        # Soft delete
-        sa.Column('is_deleted', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('deleted_at', sa.DateTime(), nullable=True),
-        sa.Column('deleted_by_id', sa.Integer(), nullable=True),
-        sa.Column('delete_comment', sa.Text(), nullable=True),
-        sa.Column('created_by_id', sa.Integer(), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['supplier_id'], ['suppliers.id']),
-        sa.ForeignKeyConstraint(['purchase_order_id'], ['purchase_orders.id']),
-        sa.ForeignKeyConstraint(['created_by_id'], ['users.id']),
-        sa.ForeignKeyConstraint(['deleted_by_id'], ['users.id']),
-        sa.PrimaryKeyConstraint('id'),
-    )
-    op.create_index('ix_supplier_transactions_supplier_id', 'supplier_transactions', ['supplier_id'])
-    op.create_index('ix_supplier_transactions_type', 'supplier_transactions', ['transaction_type'])
-    op.create_index('ix_supplier_transactions_date', 'supplier_transactions', ['transaction_date'])
-    op.create_index('ix_supplier_transactions_is_deleted', 'supplier_transactions', ['is_deleted'])
+    # Raw SQL — SQLAlchemy enum auto-create muammosini oldini olish
+    conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS supplier_transactions (
+            id SERIAL PRIMARY KEY,
+            supplier_id INTEGER NOT NULL REFERENCES suppliers(id),
+            transaction_type suppliertransactiontype NOT NULL,
+            amount NUMERIC(20, 2) NOT NULL,
+            currency VARCHAR(5) NOT NULL DEFAULT 'uzs',
+            usd_rate NUMERIC(12, 2),
+            amount_uzs NUMERIC(20, 2),
+            transaction_date DATE NOT NULL,
+            comment TEXT NOT NULL,
+            purchase_order_id INTEGER REFERENCES purchase_orders(id),
+            is_deleted BOOLEAN NOT NULL DEFAULT false,
+            deleted_at TIMESTAMP,
+            deleted_by_id INTEGER REFERENCES users(id),
+            delete_comment TEXT,
+            created_by_id INTEGER NOT NULL REFERENCES users(id),
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        )
+    """))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_supplier_transactions_supplier_id ON supplier_transactions (supplier_id)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_supplier_transactions_type ON supplier_transactions (transaction_type)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_supplier_transactions_date ON supplier_transactions (transaction_date)"))
+    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_supplier_transactions_is_deleted ON supplier_transactions (is_deleted)"))
 
 
 def downgrade() -> None:

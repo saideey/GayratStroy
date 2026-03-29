@@ -71,6 +71,45 @@ with engine.connect() as conn:
             print(f"  ✅ Migrated version ID: '{current}' → '{new_id}'")
         elif current and current.startswith('rev_'):
             print(f"  ✅ Version ID already new format: '{current}'")
+
+            # Jadvallar bor lekin version eski bo'lsa — to'g'irlash
+            # supplier_transactions bor → rev_008 gacha o'tgan
+            # contact_phone ustuni yo'q → rev_010 kelmagan
+            try:
+                has_supplier_tx = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='supplier_transactions'"
+                )).scalar()
+                has_contact_phone = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                    "WHERE table_name='sales' AND column_name='contact_phone'"
+                )).scalar()
+                has_expenses = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='expenses'"
+                )).scalar()
+                has_purchase_orders = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='purchase_orders'"
+                )).scalar()
+
+                # Asl version ni aniqlash
+                detected = current
+                if has_purchase_orders:
+                    detected = 'rev_009'
+                elif has_supplier_tx:
+                    detected = 'rev_008'
+                elif has_expenses:
+                    detected = 'rev_007'
+
+                if has_contact_phone:
+                    detected = 'rev_010'
+
+                if detected != current:
+                    conn.execute(text(
+                        "UPDATE alembic_version SET version_num = :v"
+                    ), {"v": detected})
+                    conn.commit()
+                    print(f"  ✅ Auto-corrected version: '{current}' → '{detected}'")
+            except Exception as e:
+                print(f"  ⚠️  Version detection error: {e}")
         elif current is None and has_roles_table:
             # alembic_version bo'sh lekin jadvallar bor
             conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('rev_006')"))
