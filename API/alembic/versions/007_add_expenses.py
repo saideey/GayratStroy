@@ -54,7 +54,7 @@ def upgrade() -> None:
     )).scalar()
 
     if not table_exists:
-        # Enum type yaratish (agar yo'q bo'lsa)
+        # Enum type yaratish — IF NOT EXISTS bilan xavfsiz
         conn.execute(text(
             "DO $$ BEGIN "
             "  CREATE TYPE expensecurrencytype AS ENUM ('uzs', 'usd'); "
@@ -62,38 +62,32 @@ def upgrade() -> None:
             "END $$;"
         ))
 
-        op.create_table(
-            'expenses',
-            sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-            sa.Column('title', sa.String(255), nullable=False),
-            sa.Column('description', sa.Text(), nullable=True),
-            sa.Column('amount', sa.Numeric(20, 2), nullable=False),
-            sa.Column('currency',
-                sa.Enum('uzs', 'usd', name='expensecurrencytype', create_type=False),
-                nullable=False,
-                server_default='uzs'
-            ),
-            sa.Column('usd_rate', sa.Numeric(12, 2), nullable=True),
-            sa.Column('amount_uzs', sa.Numeric(20, 2), nullable=True),
-            sa.Column('expense_date', sa.Date(), nullable=False),
-            sa.Column('category_id', sa.Integer(), nullable=False),
-            sa.Column('created_by_id', sa.Integer(), nullable=False),
-            sa.Column('is_deleted', sa.Boolean(), nullable=False, server_default='false'),
-            sa.Column('deleted_at', sa.DateTime(), nullable=True),
-            sa.Column('deleted_by_id', sa.Integer(), nullable=True),
-            sa.Column('delete_comment', sa.Text(), nullable=True),
-            sa.Column('created_at', sa.DateTime(), nullable=False),
-            sa.Column('updated_at', sa.DateTime(), nullable=False),
-            sa.ForeignKeyConstraint(['category_id'], ['expense_categories.id']),
-            sa.ForeignKeyConstraint(['created_by_id'], ['users.id']),
-            sa.ForeignKeyConstraint(['deleted_by_id'], ['users.id']),
-            sa.PrimaryKeyConstraint('id'),
-        )
-        op.create_index('ix_expenses_category_id', 'expenses', ['category_id'])
-        op.create_index('ix_expenses_expense_date', 'expenses', ['expense_date'])
-        op.create_index('ix_expenses_created_by_id', 'expenses', ['created_by_id'])
-        op.create_index('ix_expenses_is_deleted', 'expenses', ['is_deleted'])
-        op.create_index('ix_expenses_currency', 'expenses', ['currency'])
+        # Raw SQL ishlatamiz — SQLAlchemy enum auto-create muammosini oldini olish uchun
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS expenses (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                amount NUMERIC(20, 2) NOT NULL,
+                currency expensecurrencytype NOT NULL DEFAULT 'uzs',
+                usd_rate NUMERIC(12, 2),
+                amount_uzs NUMERIC(20, 2),
+                expense_date DATE NOT NULL,
+                category_id INTEGER NOT NULL REFERENCES expense_categories(id),
+                created_by_id INTEGER NOT NULL REFERENCES users(id),
+                is_deleted BOOLEAN NOT NULL DEFAULT false,
+                deleted_at TIMESTAMP,
+                deleted_by_id INTEGER REFERENCES users(id),
+                delete_comment TEXT,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+        """))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expenses_category_id ON expenses (category_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expenses_expense_date ON expenses (expense_date)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expenses_created_by_id ON expenses (created_by_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expenses_is_deleted ON expenses (is_deleted)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expenses_currency ON expenses (currency)"))
 
     # ─── 3. expense_edit_logs jadvali ────────────────────────────────────────
     logs_exists = conn.execute(text(
@@ -109,38 +103,33 @@ def upgrade() -> None:
             "END $$;"
         ))
 
-        op.create_table(
-            'expense_edit_logs',
-            sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-            sa.Column('expense_id', sa.Integer(), nullable=False),
-            sa.Column('changed_by_id', sa.Integer(), nullable=False),
-            sa.Column('action',
-                sa.Enum('created', 'updated', 'deleted', 'restored',
-                        name='expenseeditaction', create_type=False),
-                nullable=False
-            ),
-            sa.Column('comment', sa.Text(), nullable=False),
-            sa.Column('old_title', sa.String(255), nullable=True),
-            sa.Column('old_description', sa.Text(), nullable=True),
-            sa.Column('old_amount', sa.Numeric(20, 2), nullable=True),
-            sa.Column('old_currency', sa.String(10), nullable=True),
-            sa.Column('old_category_id', sa.Integer(), nullable=True),
-            sa.Column('old_expense_date', sa.Date(), nullable=True),
-            sa.Column('new_title', sa.String(255), nullable=True),
-            sa.Column('new_description', sa.Text(), nullable=True),
-            sa.Column('new_amount', sa.Numeric(20, 2), nullable=True),
-            sa.Column('new_currency', sa.String(10), nullable=True),
-            sa.Column('new_category_id', sa.Integer(), nullable=True),
-            sa.Column('new_expense_date', sa.Date(), nullable=True),
-            sa.Column('created_at', sa.DateTime(), nullable=False),
-            sa.Column('updated_at', sa.DateTime(), nullable=False),
-            sa.ForeignKeyConstraint(['expense_id'], ['expenses.id']),
-            sa.ForeignKeyConstraint(['changed_by_id'], ['users.id']),
-            sa.PrimaryKeyConstraint('id'),
-        )
-        op.create_index('ix_expense_edit_logs_expense_id', 'expense_edit_logs', ['expense_id'])
-        op.create_index('ix_expense_edit_logs_changed_by_id', 'expense_edit_logs', ['changed_by_id'])
-        op.create_index('ix_expense_edit_logs_action', 'expense_edit_logs', ['action'])
+        # Raw SQL — enum auto-create muammosini oldini olish
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS expense_edit_logs (
+                id SERIAL PRIMARY KEY,
+                expense_id INTEGER NOT NULL REFERENCES expenses(id),
+                changed_by_id INTEGER NOT NULL REFERENCES users(id),
+                action expenseeditaction NOT NULL,
+                comment TEXT NOT NULL,
+                old_title VARCHAR(255),
+                old_description TEXT,
+                old_amount NUMERIC(20, 2),
+                old_currency VARCHAR(10),
+                old_category_id INTEGER,
+                old_expense_date DATE,
+                new_title VARCHAR(255),
+                new_description TEXT,
+                new_amount NUMERIC(20, 2),
+                new_currency VARCHAR(10),
+                new_category_id INTEGER,
+                new_expense_date DATE,
+                created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+        """))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expense_edit_logs_expense_id ON expense_edit_logs (expense_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expense_edit_logs_changed_by_id ON expense_edit_logs (changed_by_id)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_expense_edit_logs_action ON expense_edit_logs (action)"))
 
     # ─── 4. Default kategoriyalar ────────────────────────────────────────────
     op.execute("""
