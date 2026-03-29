@@ -62,45 +62,48 @@ with engine.connect() as conn:
         print(f"  current version: {current or 'NONE'}")
 
         if current and current in OLD_TO_NEW:
-            # Eski ID → yangi ID ga o'zgartirish
             new_id = OLD_TO_NEW[current]
             conn.execute(text(
                 "UPDATE alembic_version SET version_num = :new WHERE version_num = :old"
             ), {"new": new_id, "old": current})
             conn.commit()
             print(f"  ✅ Migrated version ID: '{current}' → '{new_id}'")
+            current = new_id
+
         elif current and current.startswith('rev_'):
             print(f"  ✅ Version ID already new format: '{current}'")
 
-            # Jadvallar bor lekin version eski bo'lsa — to'g'irlash
-            # supplier_transactions bor → rev_008 gacha o'tgan
-            # contact_phone ustuni yo'q → rev_010 kelmagan
+        elif current is None and has_roles_table:
+            conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('rev_006')"))
+            conn.commit()
+            print("  ✅ Inserted rev_006 into empty alembic_version")
+            current = 'rev_006'
+
+        # 4. Jadvallar holatiga qarab version aniqlash va to'g'irlash
+        if current and current.startswith('rev_'):
             try:
-                has_supplier_tx = conn.execute(text(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='supplier_transactions'"
-                )).scalar()
-                has_contact_phone = conn.execute(text(
-                    "SELECT COUNT(*) FROM information_schema.columns "
-                    "WHERE table_name='sales' AND column_name='contact_phone'"
-                )).scalar()
-                has_expenses = conn.execute(text(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='expenses'"
-                )).scalar()
-                has_purchase_orders = conn.execute(text(
-                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name='purchase_orders'"
-                )).scalar()
+                def tbl(name):
+                    return conn.execute(text(
+                        "SELECT COUNT(*) FROM information_schema.tables WHERE table_name=:n"
+                    ), {"n": name}).scalar()
 
-                # Asl version ni aniqlash
-                detected = current
-                if has_purchase_orders:
-                    detected = 'rev_009'
-                elif has_supplier_tx:
-                    detected = 'rev_008'
-                elif has_expenses:
-                    detected = 'rev_007'
+                def col(table, column):
+                    return conn.execute(text(
+                        "SELECT COUNT(*) FROM information_schema.columns "
+                        "WHERE table_name=:t AND column_name=:c"
+                    ), {"t": table, "c": column}).scalar()
 
-                if has_contact_phone:
-                    detected = 'rev_010'
+                has_purchase_orders = tbl('purchase_orders')
+                has_supplier_tx     = tbl('supplier_transactions')
+                has_expenses        = tbl('expenses')
+                has_contact_phone   = col('sales', 'contact_phone')
+
+                # To'g'ri versiyani aniqlash
+                detected = 'rev_006'
+                if has_expenses:        detected = 'rev_007'
+                if has_supplier_tx:     detected = 'rev_008'
+                if has_purchase_orders: detected = 'rev_009'
+                if has_contact_phone:   detected = 'rev_010'
 
                 if detected != current:
                     conn.execute(text(
@@ -108,22 +111,48 @@ with engine.connect() as conn:
                     ), {"v": detected})
                     conn.commit()
                     print(f"  ✅ Auto-corrected version: '{current}' → '{detected}'")
+                    current = detected
+
             except Exception as e:
                 print(f"  ⚠️  Version detection error: {e}")
-        elif current is None and has_roles_table:
-            # alembic_version bo'sh lekin jadvallar bor
-            conn.execute(text("INSERT INTO alembic_version (version_num) VALUES ('rev_006')"))
-            conn.commit()
-            print("  ✅ Inserted rev_006 into empty alembic_version")
 
     elif has_roles_table:
-        # alembic_version jadvali yo'q, lekin roles bor — yangi jadval yaratib stamp qilamiz
         print("  ⚠️  No alembic_version table — will stamp after upgrade")
-        # Bu holatda alembic stamp ishlaydi
         os.system("alembic stamp rev_006")
         print("  ✅ Stamped to rev_006")
     else:
         print("  🆕 Fresh database — full migration will run")
+
+    # 5. Mavjud jadvallar uchun yetishmayotgan ustunlarni qo'shish
+    #    (migration dan mustaqil — har doim xavfsiz)
+    try:
+        fixes = [
+            # expense_categories
+            ("ALTER TABLE expense_categories ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT '#6b7280'", "expense_categories.color"),
+            ("ALTER TABLE expense_categories ADD COLUMN IF NOT EXISTS icon VARCHAR(50) DEFAULT '📋'", "expense_categories.icon"),
+            ("ALTER TABLE expense_categories ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES expense_categories(id)", "expense_categories.parent_id"),
+            # sales
+            ("ALTER TABLE sales ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(50)", "sales.contact_phone"),
+        ]
+        for sql, name in fixes:
+            try:
+                # Jadval mavjudligini tekshirib keyin ustun qo'shamiz
+                table = name.split('.')[0]
+                tbl_exists = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_name=:t"
+                ), {"t": table}).scalar()
+                if tbl_exists:
+                    conn.execute(text(sql))
+                    conn.commit()
+                    print(f"  ✅ Fixed: {name}")
+            except Exception as e:
+                conn.rollback()
+                if 'already exists' in str(e) or 'duplicate' in str(e).lower():
+                    print(f"  ℹ️  Already exists: {name}")
+                else:
+                    print(f"  ⚠️  Fix skipped ({name}): {e}")
+    except Exception as e:
+        print(f"  ⚠️  Column fix error: {e}")
 
 print("✅ Database preparation complete")
 PYEOF
