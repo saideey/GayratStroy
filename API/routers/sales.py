@@ -179,12 +179,16 @@ async def get_sale(
         "uom_id": item.uom_id,
         "uom_symbol": item.uom.symbol,
         "base_quantity": item.base_quantity,
+        "base_uom_id": item.product.base_uom_id,
+        "base_uom_symbol": item.product.base_uom.symbol if item.product.base_uom else "",
+        "base_uom_type": item.product.base_uom.uom_type if item.product.base_uom else "piece",
         "original_price": item.original_price,
         "unit_price": item.unit_price,
         "discount_percent": item.discount_percent,
         "discount_amount": item.discount_amount,
         "total_price": item.total_price,
         "unit_cost": item.unit_cost,
+        "cost_price": float(item.product.cost_price or 0),
         "notes": item.notes
     } for item in sale.items]
     
@@ -710,65 +714,88 @@ async def full_update_sale(
     
     from database.models import Sale, SaleItem, Customer, Stock, StockMovement, Product, ProductUOMConversion
     from database.models.warehouse import MovementType
+    from services.warehouse import StockService
     from datetime import datetime
-    
+
     sale = db.query(Sale).filter(Sale.id == sale_id).first()
-    
+
     if not sale:
         raise HTTPException(status_code=404, detail="Sotuv topilmadi")
-    
+
     if sale.is_cancelled:
         raise HTTPException(status_code=400, detail="Bekor qilingan sotuvni tahrirlab bo'lmaydi")
-    
-    # 1. Return old items to stock
+
+    stock_service = StockService(db)
+    old_warehouse_id = sale.warehouse_id
+    new_warehouse_id = data.warehouse_id
+
+    # 1. Return old items to stock (with stock movements for audit)
     for old_item in sale.items:
-        stock = db.query(Stock).filter(
-            Stock.product_id == old_item.product_id,
-            Stock.warehouse_id == sale.warehouse_id
-        ).first()
-        
-        if stock:
-            stock.quantity = Decimal(str(stock.quantity)) + old_item.base_quantity
-    
+        stock_service.add_stock(
+            product_id=old_item.product_id,
+            warehouse_id=old_warehouse_id,
+            quantity=old_item.quantity,
+            uom_id=old_item.uom_id,
+            unit_cost=old_item.unit_cost or Decimal("0"),
+            movement_type=MovementType.SALE_EDIT_RETURN,
+            reference_type="sale_edit",
+            reference_id=sale.id,
+            notes=f"Sotuv #{sale.sale_number} tahrirlash: eski tovar qaytarildi",
+            created_by_id=current_user.id,
+            do_commit=False,
+        )
+
     # 2. Update customer debt (remove old debt)
     old_customer = sale.customer
     if old_customer and sale.debt_amount > 0:
         old_customer.current_debt = Decimal(str(old_customer.current_debt or 0)) - sale.debt_amount
-    
+
     # 3. Delete old items
     db.query(SaleItem).filter(SaleItem.sale_id == sale_id).delete()
-    
+
     # 4. Create new items and deduct from stock
     subtotal = Decimal('0')
     new_items = []
-    
+
     for item_data in data.items:
         product = db.query(Product).filter(Product.id == item_data.product_id).first()
         if not product:
             raise HTTPException(status_code=404, detail=f"Tovar topilmadi: {item_data.product_id}")
-        
-        # Get UOM conversion
-        product_uom = db.query(ProductUOMConversion).filter(
-            ProductUOMConversion.product_id == item_data.product_id,
-            ProductUOMConversion.uom_id == item_data.uom_id
-        ).first()
-        
-        conversion_factor = Decimal(str(product_uom.conversion_factor)) if product_uom else Decimal('1')
-        base_quantity = Decimal(str(item_data.quantity)) * conversion_factor
-        
+
+        # Convert quantity to base UOM using StockService (handles all UOM conversions properly)
+        base_quantity = stock_service.convert_to_base_uom(
+            product.id, Decimal(str(item_data.quantity)), item_data.uom_id
+        )
+        base_quantity = base_quantity.quantize(Decimal("0.0001"))
+
         unit_price = Decimal(str(item_data.unit_price)) if item_data.unit_price else Decimal(str(product.sale_price or 0))
         original_price = Decimal(str(getattr(item_data, 'original_price', None) or item_data.unit_price or product.sale_price or 0))
         total_price = unit_price * Decimal(str(item_data.quantity))
-        
-        # Deduct from stock
-        stock = db.query(Stock).filter(
-            Stock.product_id == item_data.product_id,
-            Stock.warehouse_id == sale.warehouse_id
-        ).first()
-        
-        if stock:
-            stock.quantity = Decimal(str(stock.quantity)) - base_quantity
-        
+
+        # Get cost price for profit tracking
+        stock = stock_service.get_stock(product.id, new_warehouse_id)
+        unit_cost = Decimal("0")
+        if stock and stock.average_cost and stock.average_cost > 0:
+            unit_cost = stock.average_cost
+        elif product.cost_price and product.cost_price > 0:
+            unit_cost = product.cost_price
+
+        # Deduct from stock (with stock movements for audit/reports)
+        stock_obj, movement, msg = stock_service.remove_stock(
+            product_id=product.id,
+            warehouse_id=new_warehouse_id,
+            quantity=item_data.quantity,
+            uom_id=item_data.uom_id,
+            movement_type=MovementType.SALE,
+            reference_type="sale_edit",
+            reference_id=sale.id,
+            notes=f"Sotuv #{sale.sale_number} tahrirlash: yangi tovar chiqim",
+            created_by_id=current_user.id,
+        )
+        if not stock_obj:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"'{product.name}': {msg}")
+
         # Create sale item
         sale_item = SaleItem(
             sale_id=sale_id,
@@ -779,6 +806,7 @@ async def full_update_sale(
             unit_price=unit_price,
             original_price=original_price,
             total_price=total_price,
+            unit_cost=unit_cost,
             discount_percent=getattr(item_data, 'discount_percent', 0) or 0,
             discount_amount=getattr(item_data, 'discount_amount', 0) or 0,
             notes=item_data.notes

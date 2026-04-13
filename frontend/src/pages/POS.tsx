@@ -45,6 +45,7 @@ interface CartItem {
   conversion_factor: number
   base_uom_id: number
   base_uom_symbol: string
+  base_uom_type?: string // weight, length, area, volume, piece
   cost_price: number
   original_price: number
   unit_price: number
@@ -86,6 +87,9 @@ export default function POSPage() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editPriceValue, setEditPriceValue] = useState('')
   const [editQuantityValue, setEditQuantityValue] = useState('')
+  const [editWeightMode, setEditWeightMode] = useState(false) // gram ↔ sum calculator
+  const [editTargetAmount, setEditTargetAmount] = useState(0) // target sum for weight calc
+  const [editGramValue, setEditGramValue] = useState('') // gram input for weight products
   const [paymentType, setPaymentType] = useState<string>('CASH')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState<'UZS' | 'USD'>('UZS')
@@ -185,10 +189,11 @@ export default function POSPage() {
         uom_id: item.uom_id,
         uom_symbol: item.uom_symbol || '',
         uom_name: item.uom_symbol || '',
-        conversion_factor: 1,
-        base_uom_id: item.uom_id,
-        base_uom_symbol: item.uom_symbol || '',
-        cost_price: 0,
+        conversion_factor: (item as any).conversion_factor || 1,
+        base_uom_id: (item as any).base_uom_id || item.uom_id,
+        base_uom_symbol: (item as any).base_uom_symbol || item.uom_symbol || '',
+        base_uom_type: (item as any).base_uom_type || 'piece',
+        cost_price: (item as any).cost_price || 0,
         original_price: item.original_price || item.unit_price,
         unit_price: item.unit_price,
         available_stock: 999999, // Not tracked in edit mode
@@ -383,7 +388,31 @@ export default function POSPage() {
     return Number(product.cost_price) || 0
   }
 
+  // Ombordagi qoldiqni hisoblash: savatdagi barcha itemlarni hisobga oladi (base UOM da)
+  const getAvailableStockForProduct = (productId: number, excludeItemId?: string): number => {
+    // Savatdagi birinchi item orqali available_stock olish (product.current_stock dan olingan)
+    const cartItem = items.find(i => i.product_id === productId)
+    const productFromList = (productsData?.data as Product[] | undefined)?.find((p: Product) => p.id === productId)
+    const totalStock = Number(productFromList?.current_stock) || cartItem?.available_stock || 0
+
+    // Savatda shu tovardan qancha bor (base UOM da)
+    const usedInCart = items.reduce((sum, item) => {
+      if (item.product_id === productId && item.id !== excludeItemId) {
+        return sum + (item.quantity * item.conversion_factor)
+      }
+      return sum
+    }, 0)
+
+    return totalStock - usedInCart
+  }
+
   const handleProductClick = (product: Product) => {
+    const baseStock = Number(product.current_stock) || 0
+    if (baseStock <= 0) {
+      toast.error(`${product.name} - ${t('outOfStock')}`)
+      return
+    }
+
     const salePrice = getSalePrice(product)
     const costPrice = getCostPrice(product)
 
@@ -485,12 +514,37 @@ export default function POSPage() {
   const handleConfirmAddProduct = () => {
     if (!addProductData.product) return
 
+    // Ombor qoldig'ini tekshirish (base UOM da)
+    if (!isEditMode) {
+      const availableBase = getAvailableStockForProduct(addProductData.product.id)
+      const requestedBase = addProductData.quantity * addProductData.conversionFactor
+      if (requestedBase > availableBase + 0.001) {
+        const availableInUom = addProductData.conversionFactor > 0
+          ? Math.floor((availableBase / addProductData.conversionFactor) * 1000) / 1000
+          : 0
+        toast.error(`Omborda yetarli qoldiq yo'q. Mavjud: ${availableInUom} ${addProductData.selectedUomSymbol}`)
+        return
+      }
+    }
+
     const existingItem = items.find(i =>
       i.product_id === addProductData.product!.id &&
       i.uom_id === addProductData.selectedUomId
     )
 
     if (existingItem) {
+      // Mavjud item + yangi miqdor tekshiruvi
+      if (!isEditMode) {
+        const availableBase = getAvailableStockForProduct(addProductData.product.id, existingItem.id)
+        const newTotalBase = (existingItem.quantity + addProductData.quantity) * addProductData.conversionFactor
+        if (newTotalBase > availableBase + 0.001) {
+          const availableInUom = addProductData.conversionFactor > 0
+            ? Math.floor((availableBase / addProductData.conversionFactor) * 1000) / 1000
+            : 0
+          toast.error(`Omborda yetarli qoldiq yo'q. Mavjud: ${availableInUom} ${addProductData.selectedUomSymbol}`)
+          return
+        }
+      }
       setItems(items.map(item =>
         item.id === existingItem.id
           ? { ...item, quantity: item.quantity + addProductData.quantity, unit_price: addProductData.unitPrice }
@@ -508,6 +562,7 @@ export default function POSPage() {
         conversion_factor: addProductData.conversionFactor,
         base_uom_id: addProductData.product.base_uom_id,
         base_uom_symbol: addProductData.product.base_uom_symbol,
+        base_uom_type: addProductData.product.base_uom_type,
         cost_price: addProductData.costPrice,
         original_price: addProductData.unitPrice,
         unit_price: addProductData.unitPrice,
@@ -659,6 +714,15 @@ export default function POSPage() {
     const existingItem = items.find(i => i.product_id === product.id && i.uom_id === uomId)
 
     if (existingItem) {
+      // Qoldiq tekshiruvi: mavjud + 1 > ombor
+      if (!isEditMode) {
+        const availableBase = getAvailableStockForProduct(product.id, existingItem.id)
+        const newTotalBase = (existingItem.quantity + 1) * conversionFactor
+        if (newTotalBase > availableBase + 0.001) {
+          toast.error(`Omborda yetarli qoldiq yo'q. Mavjud: ${Math.floor(availableBase / conversionFactor * 1000) / 1000} ${uomSymbol}`)
+          return
+        }
+      }
       setItems(items.map(item =>
         item.id === existingItem.id
           ? { ...item, quantity: item.quantity + 1 }
@@ -687,6 +751,7 @@ export default function POSPage() {
         conversion_factor: conversionFactor,
         base_uom_id: product.base_uom_id,
         base_uom_symbol: product.base_uom_symbol,
+        base_uom_type: product.base_uom_type,
         cost_price: costPrice,
         original_price: salePrice,
         unit_price: salePrice,
@@ -776,6 +841,16 @@ export default function POSPage() {
     setItems(items.map(item => {
       if (item.id === itemId) {
         const newQty = Math.max(0.1, item.quantity + delta)
+        // Faqat oshirayotganda tekshirish (kamaytirishda kerak emas)
+        if (delta > 0 && !isEditMode) {
+          const availableBase = getAvailableStockForProduct(item.product_id, item.id)
+          const newBase = newQty * item.conversion_factor
+          if (newBase > availableBase + 0.001) {
+            const maxQty = Math.floor(availableBase / item.conversion_factor * 1000) / 1000
+            toast.error(`Omborda yetarli qoldiq yo'q. Mavjud: ${maxQty} ${item.uom_symbol}`)
+            return item
+          }
+        }
         return { ...item, quantity: newQty }
       }
       return item
@@ -820,23 +895,48 @@ export default function POSPage() {
   const handleEditQuantity = (item: CartItem) => {
     setEditingItemId(item.id)
     setEditQuantityValue(item.quantity.toString())
+    setEditWeightMode(false)
+    setEditTargetAmount(item.unit_price * item.quantity)
+    setEditGramValue((item.quantity * 1000).toString())
     setShowEditQuantityDialog(true)
   }
 
+  // Helper: check if editing item is weight-based
+  const getEditingItem = () => items.find(i => i.id === editingItemId)
+  const isEditingWeightProduct = () => {
+    const item = getEditingItem()
+    if (!item) return false
+    const uomType = item.base_uom_type || ''
+    const symbol = item.uom_symbol?.toLowerCase() || ''
+    return uomType === 'weight' || ['kg', 'g', 't', 'кг', 'гр', 'тн'].includes(symbol)
+  }
+
   const handleSaveQuantity = () => {
-    if (editingItemId && editQuantityValue) {
+    if (editingItemId) {
       const newQty = parseFloat(editQuantityValue)
       if (!isNaN(newQty) && newQty > 0) {
-        setItems(items.map(item =>
-          item.id === editingItemId
-            ? { ...item, quantity: newQty }
-            : item
+        const item = getEditingItem()
+        // Ombor qoldig'ini tekshirish
+        if (item && !isEditMode) {
+          const availableBase = getAvailableStockForProduct(item.product_id, item.id)
+          const newBase = newQty * item.conversion_factor
+          if (newBase > availableBase + 0.001) {
+            const maxQty = Math.floor(availableBase / item.conversion_factor * 1000) / 1000
+            toast.error(`Omborda yetarli qoldiq yo'q. Mavjud: ${maxQty} ${item.uom_symbol}`)
+            return
+          }
+        }
+        setItems(items.map(i =>
+          i.id === editingItemId
+            ? { ...i, quantity: Math.round(newQty * 1000) / 1000 }
+            : i
         ))
         toast.success(t('quantityChanged'))
       }
     }
     setShowEditQuantityDialog(false)
     setEditingItemId(null)
+    setEditWeightMode(false)
   }
 
   // Apply general discount - calculate final price after discount
@@ -2583,15 +2683,121 @@ export default function POSPage() {
         <DialogContent className="max-w-xs">
           <DialogHeader>
             <DialogTitle>{t('editQuantity')}</DialogTitle>
+            {getEditingItem() && (
+              <DialogDescription className="font-semibold text-sm text-gray-800">
+                {getEditingItem()?.product_name}
+              </DialogDescription>
+            )}
           </DialogHeader>
-          <input
-            type="number"
-            step="0.1"
-            value={editQuantityValue}
-            onChange={(e) => setEditQuantityValue(e.target.value)}
-            className="w-full h-12 px-4 text-lg border rounded-lg text-center"
-            autoFocus
-          />
+
+          <div className="space-y-3">
+            {/* Miqdor (kg) */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {t('quantity')} ({getEditingItem()?.uom_symbol || ''})
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                step="0.001"
+                value={editQuantityValue}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setEditQuantityValue(val)
+                  if (isEditingWeightProduct()) {
+                    const num = parseFloat(val) || 0
+                    setEditGramValue((num * 1000).toFixed(0))
+                    const item = getEditingItem()
+                    if (item) setEditTargetAmount(Math.round(num * item.unit_price))
+                  }
+                }}
+                className="w-full h-12 px-4 text-lg border rounded-lg text-center"
+                autoFocus={!isEditingWeightProduct()}
+              />
+            </div>
+
+            {/* Weight calculator - faqat weight UOM uchun */}
+            {isEditingWeightProduct() && (() => {
+              const item = getEditingItem()
+              if (!item) return null
+              const pricePerUnit = item.unit_price // narx per kg
+
+              return (
+                <div className="space-y-3">
+                  {/* Gram kiritish */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Gramm (g)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={editGramValue}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\s/g, '')
+                        setEditGramValue(val)
+                        const grams = parseFloat(val) || 0
+                        const kgQty = Math.round(grams) / 1000
+                        setEditQuantityValue(kgQty.toString())
+                        setEditTargetAmount(Math.round(kgQty * pricePerUnit))
+                      }}
+                      autoFocus
+                      className="w-full h-12 px-4 text-lg border-2 border-purple-300 rounded-lg text-center focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none"
+                      placeholder="Masalan: 700"
+                    />
+                  </div>
+
+                  {/* Summaga hisoblash */}
+                  <div>
+                    <label className="block text-xs font-medium text-purple-600 mb-1">
+                      Summa (so'm)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={editTargetAmount === 0 ? '' : formatInputNumber(editTargetAmount)}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value.replace(/\s/g, '')) || 0
+                        setEditTargetAmount(val)
+                        const kgQty = pricePerUnit > 0 ? val / pricePerUnit : 0
+                        const roundedKg = Math.round(kgQty * 1000) / 1000
+                        setEditQuantityValue(roundedKg.toString())
+                        setEditGramValue((roundedKg * 1000).toFixed(0))
+                      }}
+                      className="w-full h-12 px-4 text-lg border-2 border-green-300 rounded-lg text-center focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none"
+                      placeholder="Masalan: 15000"
+                    />
+                  </div>
+
+                  {/* Natija */}
+                  {parseFloat(editQuantityValue) > 0 && (
+                    <div className="bg-blue-50 rounded-lg border border-blue-200 px-3 py-2 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Miqdor:</span>
+                        <span className="text-sm font-bold text-blue-700">
+                          {parseFloat(editQuantityValue) >= 1
+                            ? `${parseFloat(editQuantityValue).toFixed(3)} kg`
+                            : `${Math.round(parseFloat(editQuantityValue) * 1000)} g`
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Narx:</span>
+                        <span className="text-xs text-gray-500">1 {item.uom_symbol} = {formatMoney(pricePerUnit)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Jami:</span>
+                        <span className="text-sm font-bold text-green-700">
+                          {formatMoney(parseFloat(editQuantityValue) * pricePerUnit)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditQuantityDialog(false)}>{t('cancel')}</Button>
             <Button variant="primary" onClick={handleSaveQuantity}>{t('save')}</Button>

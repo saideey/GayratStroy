@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(cd:*)",
+      "Read(//mnt/c/Users/i.saidov/PycharmProjects/GayratStroy/**)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

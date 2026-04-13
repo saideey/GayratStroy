@@ -131,6 +131,7 @@ export interface CartItem {
   conversion_factor: number
   base_uom_id?: number
   base_uom_symbol?: string
+  base_uom_type?: string // weight, length, area, volume, piece
   cost_price: number // Kelish narxi (base UOM uchun)
   original_price: number // Asl sotuv narxi
   unit_price: number // Hozirgi narx (chegirmadan keyin)

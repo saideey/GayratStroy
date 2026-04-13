@@ -104,6 +104,7 @@ class MovementType(PyEnum):
     RETURN_TO_SUPPLIER = "return_to_supplier"  # Yetkazib beruvchiga qaytarish
     WRITE_OFF = "write_off"  # Zarar / spisaniye
     INTERNAL_USE = "internal_use"  # Ichki ehtiyoj
+    SALE_EDIT_RETURN = "sale_edit_return"  # Sotuv tahrirlash: eski tovar qaytarish
 
 
 class StockMovement(BaseModel):

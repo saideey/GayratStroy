@@ -168,6 +168,10 @@ export default function SalesPage() {
           quantity: item.quantity,
           uom_id: item.uom_id,
           uom_symbol: item.uom_symbol,
+          base_uom_id: item.base_uom_id,
+          base_uom_symbol: item.base_uom_symbol,
+          base_uom_type: item.base_uom_type,
+          cost_price: item.cost_price || 0,
           unit_price: item.unit_price,
           original_price: item.original_price || item.unit_price
         })),

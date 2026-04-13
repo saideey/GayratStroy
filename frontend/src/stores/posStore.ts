@@ -99,6 +99,10 @@ interface POSState {
       quantity: number
       uom_id: number
       uom_symbol: string
+      base_uom_id?: number
+      base_uom_symbol?: string
+      base_uom_type?: string
+      cost_price?: number
       unit_price: number
       original_price: number
     }>
