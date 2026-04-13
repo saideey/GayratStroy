@@ -406,6 +406,14 @@ export default function POSPage() {
     return totalStock - usedInCart
   }
 
+  // Savatdagi item uchun ombordagi jami qoldiqni hozirgi UOM da qaytaradi (savatdagi miqdordan ayirmasdan)
+  const getStockInItemUom = (item: CartItem): number => {
+    const productFromList = (productsData?.data as Product[] | undefined)?.find((p: Product) => p.id === item.product_id)
+    const baseStock = Number(productFromList?.current_stock) || item.available_stock || 0
+    const factor = item.conversion_factor > 0 ? item.conversion_factor : 1
+    return baseStock / factor
+  }
+
   const handleProductClick = (product: Product) => {
     const baseStock = Number(product.current_stock) || 0
     if (baseStock <= 0) {
@@ -1616,6 +1624,16 @@ export default function POSPage() {
 
                   <p className="text-xs text-orange-600 mb-2">{t('costPrice')}: {formatMoney(item.cost_price * item.conversion_factor, false)}</p>
 
+                  {(() => {
+                    const stockInUom = getStockInItemUom(item)
+                    const isShort = item.quantity > stockInUom
+                    return (
+                      <p className={`text-xs mb-2 ${isShort ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                        Omborda: {formatNumber(stockInUom, 1)} {item.uom_symbol}
+                      </p>
+                    )
+                  })()}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <button
@@ -1948,6 +1966,16 @@ export default function POSPage() {
                           <Edit3 className="w-3 h-3 text-blue-600" />
                         </button>
                       </div>
+
+                      {(() => {
+                        const stockInUom = getStockInItemUom(item)
+                        const isShort = item.quantity > stockInUom
+                        return (
+                          <p className={`text-xs mb-2 ${isShort ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                            Omborda: {formatNumber(stockInUom, 1)} {item.uom_symbol}
+                          </p>
+                        )
+                      })()}
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
