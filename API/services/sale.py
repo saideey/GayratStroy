@@ -203,9 +203,16 @@ class SaleService:
             original_price = unit_price
             total_price = item_data["quantity"] * unit_price
 
-            # Get stock cost for profit tracking
+            # Get stock cost for profit tracking — explicit > 0 checks so zero-cost stock
+            # rows don't swallow a valid fallback. Order: stock avg → last purchase → product.
             stock = self.stock_service.get_stock(product.id, warehouse_id)
-            unit_cost = stock.average_cost if stock and stock.average_cost else (product.cost_price or Decimal("0"))
+            unit_cost = Decimal("0")
+            if stock and stock.average_cost and stock.average_cost > 0:
+                unit_cost = stock.average_cost
+            elif stock and stock.last_purchase_cost and stock.last_purchase_cost > 0:
+                unit_cost = stock.last_purchase_cost
+            elif product.cost_price and product.cost_price > 0:
+                unit_cost = product.cost_price
 
             sale_item = SaleItem(
                 sale_id=sale.id,

@@ -308,19 +308,27 @@ async def get_profit_report(
     db: Session = Depends(get_db)
 ):
     """Get profit report by product - shows cost, revenue, and profit per product."""
-    from sqlalchemy import func
+    from sqlalchemy import func, case
     from decimal import Decimal
     from database.models import Sale, SaleItem, Product
-    
+
+    # Effective cost: prefer the per-sale snapshot, but if it's 0/NULL (legacy rows
+    # or a stock with no cost at sale time) fall back to the product master cost.
+    effective_unit_cost = case(
+        (SaleItem.unit_cost > 0, SaleItem.unit_cost),
+        else_=func.coalesce(Product.cost_price, 0)
+    )
+    line_cost = effective_unit_cost * SaleItem.base_quantity
+
     # Query sale items with product info
     query = db.query(
         SaleItem.product_id,
         Product.name.label('product_name'),
         Product.article.label('product_article'),
         func.sum(SaleItem.quantity).label('total_quantity'),
-        func.sum(SaleItem.unit_cost * SaleItem.base_quantity).label('total_cost'),
+        func.sum(line_cost).label('total_cost'),
         func.sum(SaleItem.total_price).label('total_revenue'),
-        func.sum(SaleItem.total_price - (SaleItem.unit_cost * SaleItem.base_quantity)).label('total_profit')
+        func.sum(SaleItem.total_price - line_cost).label('total_profit')
     ).join(Sale, Sale.id == SaleItem.sale_id)\
      .join(Product, Product.id == SaleItem.product_id)\
      .filter(
@@ -328,15 +336,15 @@ async def get_profit_report(
         Sale.sale_date <= end_date,
         Sale.is_cancelled == False
     )
-    
+
     if warehouse_id:
         query = query.filter(Sale.warehouse_id == warehouse_id)
-    
+
     results = query.group_by(
         SaleItem.product_id,
         Product.name,
         Product.article
-    ).order_by(func.sum(SaleItem.total_price - (SaleItem.unit_cost * SaleItem.base_quantity)).desc()).all()
+    ).order_by(func.sum(SaleItem.total_price - line_cost).desc()).all()
     
     # Calculate totals
     total_cost = sum(r.total_cost or Decimal("0") for r in results)
