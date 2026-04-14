@@ -737,7 +737,7 @@ async def full_update_sale(
             quantity=old_item.quantity,
             uom_id=old_item.uom_id,
             unit_cost=old_item.unit_cost or Decimal("0"),
-            movement_type=MovementType.SALE_EDIT_RETURN,
+            movement_type=MovementType.RETURN_FROM_CUSTOMER,
             reference_type="sale_edit",
             reference_id=sale.id,
             notes=f"Sotuv #{sale.sale_number} tahrirlash: eski tovar qaytarildi",
